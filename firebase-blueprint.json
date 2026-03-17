@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "CartItem": {
+      "title": "Cart Item",
+      "description": "Items in a user's shopping cart",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "quantity": { "type": "integer" },
+        "size": { "type": "string" },
+        "color": { "type": "string" },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "quantity"]
+    },
+    "WishlistItem": {
+      "title": "Wishlist Item",
+      "description": "Items a user wants to save for later",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "addedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer purchase records",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "items": { "type": "array", "items": { "type": "object" } },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "processing", "shipped", "delivered", "cancelled"] },
+        "shippingAddress": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "items", "total", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/users/{userId}/cart/{itemId}": {
+      "schema": "CartItem",
+      "description": "User's active shopping cart"
+    },
+    "/users/{userId}/wishlist/{itemId}": {
+      "schema": "WishlistItem",
+      "description": "User's wishlist"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Global orders collection"
+    }
+  }
+}

@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Fields: uid, email, displayName, photoURL, createdAt
+    //
+    // Collection: users/{userId}/cart
+    // Fields: productId, quantity, size, color, addedAt
+    //
+    // Collection: users/{userId}/wishlist
+    // Fields: productId, addedAt
+    //
+    // Collection: orders
+    // Fields: userId, items, total, status, shippingAddress, createdAt
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         request.auth.token.email == "aroshiarya22@gmail.com");
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasOnlyAllowedFields(data, allowedFields) {
+      return data.keys().hasOnly(allowedFields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    
+    function isValidOrder(data) {
+      return hasOnlyAllowedFields(data, ['userId', 'items', 'total', 'status', 'shippingAddress', 'createdAt']) &&
+        (data.userId == 'guest' || (isAuthenticated() && data.userId == request.auth.uid)) &&
+        data.userId is string && data.userId.size() <= 128 &&
+        data.total is number && data.total >= 0 &&
+        data.items is list && data.items.size() > 0 && data.items.size() <= 50 &&
+        data.status in ['pending', 'paid', 'shipped', 'delivered', 'cancelled'] &&
+        data.shippingAddress is map &&
+        data.shippingAddress.keys().hasAll(['firstName', 'lastName', 'email', 'phone', 'address', 'city', 'state', 'zipCode', 'country']) &&
+        data.shippingAddress.firstName is string && data.shippingAddress.firstName.size() <= 100 &&
+        data.shippingAddress.lastName is string && data.shippingAddress.lastName.size() <= 100 &&
+        isValidEmail(data.shippingAddress.email) &&
+        data.shippingAddress.phone is string && data.shippingAddress.phone.size() <= 20 &&
+        data.shippingAddress.address is string && data.shippingAddress.address.size() <= 255 &&
+        data.shippingAddress.city is string && data.shippingAddress.city.size() <= 100 &&
+        data.shippingAddress.state is string && data.shippingAddress.state.size() <= 100 &&
+        data.shippingAddress.zipCode is string && data.shippingAddress.zipCode.size() <= 20 &&
+        data.shippingAddress.country is string && data.shippingAddress.country.size() <= 100;
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && 
+        request.resource.data.uid == userId &&
+        isValidEmail(request.resource.data.email);
+      allow update: if isOwner(userId) && 
+        request.resource.data.uid == userId &&
+        request.resource.data.email == resource.data.email;
+    }
+
+    // Cart Rules
+    match /users/{userId}/cart/{itemId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Wishlist Rules
+    match /users/{userId}/wishlist/{itemId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Order Rules
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isValidOrder(request.resource.data);
+      allow update: if isAdmin();
+    }
+  }
+}
