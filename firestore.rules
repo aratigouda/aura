@@ -5,21 +5,19 @@ service cloud.firestore {
     // Assumed Data Model
     // ===============================================================
     // Collection: users
-    // Fields: uid, email, displayName, photoURL, createdAt
+    // Document ID: uid
+    // Fields: uid, name, email, role, createdAt
     //
-    // Collection: users/{userId}/cart
-    // Fields: productId, quantity, size, color, addedAt
+    // Collection: products
+    // Document ID: productId
+    // Fields: id, name, price, image, description, createdAt
     //
-    // Collection: users/{userId}/wishlist
-    // Fields: productId, addedAt
-    //
-    // Collection: orders
-    // Fields: userId, items, total, status, shippingAddress, createdAt
+    // Collection: order
+    // Document ID: orderId
+    // Fields: orderId, userId, name, email, phone, address, products, total, status, createdAt
     // ===============================================================
 
-    // ===============================================================
     // Helper Functions
-    // ===============================================================
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -29,69 +27,51 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && 
+      return isAuthenticated() &&
         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-         request.auth.token.email == "aroshiarya22@gmail.com");
+         (request.auth.token.email == "aroshiarya22@gmail.com" && request.auth.token.email_verified == true));
     }
 
-    function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'role', 'createdAt']) &&
+             data.uid is string && data.name is string && data.email is string &&
+             data.role in ['user', 'admin'] && data.createdAt is string;
     }
 
-    function hasOnlyAllowedFields(data, allowedFields) {
-      return data.keys().hasOnly(allowedFields);
+    function isValidProduct(data) {
+      return data.keys().hasAll(['id', 'name', 'price', 'image', 'description', 'category', 'createdAt']) &&
+             data.id is string && data.name is string && data.price is number &&
+             data.image is string && data.description is string && data.category is string && data.createdAt is string;
     }
 
-    // ===============================================================
-    // Domain Validators
-    // ===============================================================
-    
     function isValidOrder(data) {
-      return hasOnlyAllowedFields(data, ['userId', 'items', 'total', 'status', 'shippingAddress', 'createdAt']) &&
-        (data.userId == 'guest' || (isAuthenticated() && data.userId == request.auth.uid)) &&
-        data.userId is string && data.userId.size() <= 128 &&
-        data.total is number && data.total >= 0 &&
-        data.items is list && data.items.size() > 0 && data.items.size() <= 50 &&
-        data.status in ['pending', 'paid', 'shipped', 'delivered', 'cancelled'] &&
-        data.shippingAddress is map &&
-        data.shippingAddress.keys().hasAll(['firstName', 'lastName', 'email', 'phone', 'address', 'city', 'state', 'zipCode', 'country']) &&
-        data.shippingAddress.firstName is string && data.shippingAddress.firstName.size() <= 100 &&
-        data.shippingAddress.lastName is string && data.shippingAddress.lastName.size() <= 100 &&
-        isValidEmail(data.shippingAddress.email) &&
-        data.shippingAddress.phone is string && data.shippingAddress.phone.size() <= 20 &&
-        data.shippingAddress.address is string && data.shippingAddress.address.size() <= 255 &&
-        data.shippingAddress.city is string && data.shippingAddress.city.size() <= 100 &&
-        data.shippingAddress.state is string && data.shippingAddress.state.size() <= 100 &&
-        data.shippingAddress.zipCode is string && data.shippingAddress.zipCode.size() <= 20 &&
-        data.shippingAddress.country is string && data.shippingAddress.country.size() <= 100;
+      return data.keys().hasAll(['orderId', 'userId', 'name', 'email', 'phone', 'address', 'products', 'total', 'status', 'createdAt']) &&
+             data.orderId is string && data.userId is string && data.name is string &&
+             data.email is string && data.phone is string && data.address is string &&
+             data.products is list && data.total is number &&
+             data.status in ['pending', 'shipped', 'delivered'] && data.createdAt is string;
     }
 
-    // User Profile Rules
+    // Rules
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) && 
-        request.resource.data.uid == userId &&
-        isValidEmail(request.resource.data.email);
-      allow update: if isOwner(userId) && 
-        request.resource.data.uid == userId &&
-        request.resource.data.email == resource.data.email;
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    ((isOwner(userId) && request.resource.data.role == 'user') || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin());
     }
 
-    // Cart Rules
-    match /users/{userId}/cart/{itemId} {
-      allow read, write: if isOwner(userId);
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidProduct(request.resource.data);
     }
 
-    // Wishlist Rules
-    match /users/{userId}/wishlist/{itemId} {
-      allow read, write: if isOwner(userId);
-    }
-
-    // Order Rules
-    match /orders/{orderId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isValidOrder(request.resource.data);
-      allow update: if isAdmin();
+    match /order/{orderId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidOrder(request.resource.data) && 
+                    (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAdmin() && isValidOrder(request.resource.data);
+      allow delete: if isAdmin();
     }
   }
 }

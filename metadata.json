@@ -1,5 +1,5 @@
 {
   "name": "Aurashine",
-  "description": "A modern, elegant e-commerce platform for ladies' wear, featuring curated collections of dresses, sarees, and tops.",
+  "description": "A complete premium e-commerce system with Firebase authentication, Firestore database, admin dashboard, and real-time order tracking.",
   "requestFramePermissions": []
 }

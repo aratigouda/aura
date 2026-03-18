@@ -1,44 +1,94 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
-import { WishlistProvider } from './context/WishlistContext';
-import Layout from './components/Layout';
-
-// Pages
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import BottomNav from './components/BottomNav';
 import Home from './pages/Home';
-import Shop from './pages/Shop';
-import ProductDetails from './pages/ProductDetails';
+import Products from './pages/Products';
+import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
-import OrderSuccess from './pages/OrderSuccess';
-import Wishlist from './pages/Wishlist';
-import Auth from './pages/Auth';
-import About from './pages/About';
-import Contact from './pages/Contact';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import AdminDashboard from './pages/AdminDashboard';
+import Success from './pages/Success';
+import Orders from './pages/Orders';
+import OrderDetail from './pages/OrderDetail';
+import Profile from './pages/Profile';
+import ProtectedRoute from './components/ProtectedRoute';
 
-export default function App() {
+const App: React.FC = () => {
   return (
     <AuthProvider>
       <CartProvider>
-        <WishlistProvider>
-          <Router>
-            <Layout>
+        <Router>
+          <div className="min-h-screen flex flex-col bg-white font-sans selection:bg-emerald-100 selection:text-emerald-900">
+            <Navbar />
+            <main className="flex-grow pb-16 md:pb-0">
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/shop" element={<Shop />} />
-                <Route path="/product/:id" element={<ProductDetails />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/products/:id" element={<ProductDetail />} />
                 <Route path="/cart" element={<Cart />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/order-success" element={<OrderSuccess />} />
-                <Route path="/wishlist" element={<Wishlist />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/success" element={<Success />} />
+                
+                <Route 
+                  path="/checkout" 
+                  element={
+                    <ProtectedRoute>
+                      <Checkout />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                <Route 
+                  path="/orders" 
+                  element={
+                    <ProtectedRoute>
+                      <Orders />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                <Route 
+                  path="/order/:id" 
+                  element={
+                    <ProtectedRoute>
+                      <OrderDetail />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                <Route 
+                  path="/profile" 
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedRoute adminOnly>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
               </Routes>
-            </Layout>
-          </Router>
-        </WishlistProvider>
+            </main>
+            <BottomNav />
+            <Footer />
+          </div>
+        </Router>
       </CartProvider>
     </AuthProvider>
   );
-}
+};
+
+export default App;

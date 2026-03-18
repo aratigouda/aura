@@ -1,46 +1,111 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Star, Shield, Truck } from 'lucide-react';
-import { products } from '../data/products';
-import ProductCard from '../components/ProductCard';
+import { collection, query, limit, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
+import { Product } from '../types';
+import { ArrowRight, ShoppingBag, Star, ShieldCheck, Truck } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const Home: React.FC = () => {
-  const trendingProducts = products.filter(p => p.isTrending).slice(0, 4);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const categories = ["All", "Saree", "Kids", "Beauty", "Footwear"];
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const q = query(collection(db, 'products'), limit(12)); // Increased limit
+      const querySnapshot = await getDocs(q);
+      const products: Product[] = [];
+      querySnapshot.forEach((doc) => {
+        products.push({ id: doc.id, ...doc.data() } as Product);
+      });
+      setFeaturedProducts(products);
+      setLoading(false);
+    };
+
+    fetchProducts();
+  }, []);
+
+  const filteredProducts = featuredProducts.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
-    <div className="space-y-20 pb-20">
+    <div className="space-y-12 pb-24">
+      {/* Search Bar */}
+      <div className="p-4 bg-white sticky top-[64px] z-40 shadow-sm border-b border-gray-100">
+        <div className="max-w-7xl mx-auto space-y-4">
+          <input 
+            type="text"
+            placeholder="Search products..."
+            className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          
+          {/* Category Navigation */}
+          <div className="flex overflow-x-auto space-x-6 py-2 no-scrollbar">
+            {categories.map(cat => (
+              <button 
+                key={cat} 
+                onClick={() => setSelectedCategory(cat)}
+                className="min-w-[80px] flex flex-col items-center group focus:outline-none"
+              >
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 ${
+                  selectedCategory === cat 
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 scale-110' 
+                    : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200'
+                }`}>
+                  <ShoppingBag size={24} />
+                </div>
+                <p className={`text-xs mt-2 font-bold uppercase tracking-widest transition-colors ${
+                  selectedCategory === cat ? 'text-emerald-600' : 'text-gray-500'
+                }`}>
+                  {cat}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Hero Section */}
-      <section className="relative h-[80vh] flex items-center overflow-hidden">
+      <section className="relative h-[80vh] flex items-center overflow-hidden bg-gray-900">
         <div className="absolute inset-0 z-0">
           <img 
-            src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=2070" 
-            alt="Hero" 
-            className="w-full h-full object-cover"
+            src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1920" 
+            alt="Hero Background" 
+            className="w-full h-full object-cover opacity-60"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-pink-100/80 to-transparent"></div>
         </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div 
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
-            className="max-w-xl space-y-6"
+            className="max-w-2xl"
           >
-            <span className="text-pink-600 font-bold tracking-widest uppercase text-sm">New Collection 2026</span>
-            <h1 className="text-5xl md:text-7xl font-serif font-bold text-gray-900 leading-tight">
-              Radiate Elegance with <span className="text-pink-500">Aurashine</span>
+            <span className="text-emerald-400 font-bold tracking-widest uppercase text-sm mb-4 block">New Collection 2026</span>
+            <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight mb-8">
+              Redefine Your <br />
+              <span className="text-emerald-500 italic">Everyday Style</span>
             </h1>
-            <p className="text-lg text-gray-700 leading-relaxed">
-              Discover our latest collection of premium ladies' wear, where traditional craftsmanship meets modern sophistication.
+            <p className="text-gray-300 text-lg mb-10 leading-relaxed max-w-lg">
+              Discover our curated selection of premium essentials designed for the modern lifestyle. Quality that speaks for itself.
             </p>
-            <div className="flex space-x-4 pt-4">
-              <Link to="/shop" className="bg-pink-600 text-white px-8 py-4 rounded-full font-bold hover:bg-pink-700 transition-all flex items-center group">
-                Shop Now <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
+            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+              <Link to="/products" className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-full font-bold transition-all flex items-center justify-center space-x-2 group">
+                <span>Shop Now</span>
+                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/about" className="bg-white text-pink-600 border border-pink-200 px-8 py-4 rounded-full font-bold hover:bg-pink-50 transition-all">
+              <Link to="/about" className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-8 py-4 rounded-full font-bold transition-all text-center">
                 Our Story
               </Link>
             </div>
@@ -50,84 +115,103 @@ const Home: React.FC = () => {
 
       {/* Features */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            { icon: <Star className="text-pink-500" />, title: "Premium Quality", desc: "Handpicked fabrics and meticulous stitching." },
-            { icon: <Truck className="text-pink-500" />, title: "Fast Delivery", desc: "Free shipping on all orders over $100." },
-            { icon: <Shield className="text-pink-500" />, title: "Secure Payment", desc: "100% secure payment processing." }
-          ].map((feature, i) => (
-            <div key={i} className="flex items-start space-x-4 p-6 bg-white rounded-2xl border border-pink-50 shadow-sm">
-              <div className="p-3 bg-pink-50 rounded-xl">{feature.icon}</div>
-              <div>
-                <h3 className="font-bold text-gray-800">{feature.title}</h3>
-                <p className="text-sm text-gray-600">{feature.desc}</p>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-2">
+              <Truck size={32} />
             </div>
-          ))}
+            <h3 className="text-xl font-bold text-gray-900">Global Shipping</h3>
+            <p className="text-gray-500 text-sm">Fast and reliable delivery to over 50 countries worldwide.</p>
+          </div>
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-2">
+              <ShieldCheck size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">Secure Payments</h3>
+            <p className="text-gray-500 text-sm">Your transactions are protected by industry-leading encryption.</p>
+          </div>
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-2">
+              <Star size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">Premium Quality</h3>
+            <p className="text-gray-500 text-sm">Every product is hand-picked and tested for excellence.</p>
+          </div>
         </div>
       </section>
 
-      {/* Trending Products */}
+      {/* Featured Products */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-end mb-10">
+        <div className="flex justify-between items-end mb-12">
           <div>
-            <h2 className="text-3xl font-serif font-bold text-gray-900">Trending Now</h2>
-            <p className="text-pink-400">Most loved pieces from our collection</p>
+            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Featured Products</h2>
+            <p className="text-gray-500 mt-2">Our most loved items this season</p>
           </div>
-          <Link to="/shop" className="text-pink-600 font-bold hover:underline flex items-center">
-            View All <ArrowRight size={16} className="ml-1" />
+          <Link to="/products" className="text-emerald-600 font-bold flex items-center space-x-2 hover:text-emerald-700 transition-colors group">
+            <span>View All</span>
+            <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {trendingProducts.map(product => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
 
-      {/* Categories */}
-      <section className="bg-pink-50 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-serif font-bold text-gray-900 text-center mb-12">Shop by Category</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { name: 'Dresses', img: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80&w=1000' },
-              { name: 'Sarees', img: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=1000' },
-              { name: 'Tops', img: 'https://images.unsplash.com/photo-1551163943-3f6a855d1153?auto=format&fit=crop&q=80&w=1000' }
-            ].map((cat, i) => (
-              <Link 
-                key={i} 
-                to={`/shop?category=${cat.name}`}
-                className="group relative h-96 rounded-3xl overflow-hidden shadow-lg"
-              >
-                <img src={cat.img} alt={cat.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
-                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <h3 className="text-white text-4xl font-serif font-bold tracking-widest">{cat.name}</h3>
-                </div>
-              </Link>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="animate-pulse space-y-4">
+                <div className="bg-gray-200 aspect-square rounded-2xl"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              </div>
             ))}
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {filteredProducts.map((product) => (
+                <motion.div 
+                  key={product.id}
+                  whileHover={{ y: -10 }}
+                  className="group relative"
+                >
+                  <Link to={`/products/${product.id}`}>
+                    <div className="aspect-square overflow-hidden rounded-2xl bg-gray-100 mb-4 relative">
+                      <img 
+                        src={product.image} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+                      <button className="absolute top-2 right-2 bg-white p-2 rounded-full shadow-sm hover:scale-110 transition-transform z-10">
+                        ❤️
+                      </button>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">{product.name}</h3>
+                    <p className="text-emerald-600 font-bold">${Number(product.price).toFixed(2)}</p>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No products found matching your search.</p>
+              </div>
+            )}
+          </>
+        )}
       </section>
 
-      {/* Newsletter */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-pink-600 rounded-[3rem] p-12 text-center text-white space-y-6">
-          <h2 className="text-4xl font-serif font-bold">Join the Aurashine Club</h2>
-          <p className="text-pink-100 max-w-md mx-auto">
-            Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.
-          </p>
-          <form className="max-w-md mx-auto flex space-x-2">
-            <input 
-              type="email" 
-              placeholder="Your email address" 
-              className="flex-grow px-6 py-4 rounded-full text-gray-900 focus:outline-none"
-            />
-            <button className="bg-white text-pink-600 px-8 py-4 rounded-full font-bold hover:bg-pink-50 transition-all">
-              Join
-            </button>
-          </form>
+      {/* CTA Section */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-emerald-600 rounded-[3rem] p-12 md:p-24 relative overflow-hidden text-center">
+          <div className="relative z-10 max-w-2xl mx-auto">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-8 leading-tight">Ready to upgrade your lifestyle?</h2>
+            <p className="text-emerald-100 text-lg mb-10">Join our community and get exclusive early access to new drops and special offers.</p>
+            <Link to="/signup" className="bg-white text-emerald-600 px-10 py-4 rounded-full font-bold hover:bg-emerald-50 transition-all inline-block">
+              Get Started Now
+            </Link>
+          </div>
+          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl"></div>
         </div>
       </section>
     </div>

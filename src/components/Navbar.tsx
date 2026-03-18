@@ -1,119 +1,162 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ShoppingBag, Heart, User, Menu, X } from 'lucide-react';
-import { useCart } from '../context/CartContext';
-import { useWishlist } from '../context/WishlistContext';
+import { ShoppingCart, User, LogOut, LayoutDashboard, Menu, X, Home as HomeIcon, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
+import { auth } from '../firebase';
+import { signOut } from 'firebase/auth';
 import { motion, AnimatePresence } from 'motion/react';
 
 const Navbar: React.FC = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { totalItems } = useCart();
-  const { wishlist } = useWishlist();
-  const { user } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
+  const { cart } = useCart();
   const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    navigate('/login');
+    setIsSidebarOpen(false);
+  };
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-pink-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          {/* Mobile Menu Button */}
-          <div className="flex md:hidden">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-600">
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
-
-          {/* Logo */}
-          <div className="flex-shrink-0 flex items-center">
-            <Link to="/" className="text-3xl font-serif font-bold tracking-widest text-pink-600">
-              AURASHINE
-            </Link>
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8">
-            <Link to="/" className="text-gray-600 hover:text-pink-500 transition-colors font-medium">Home</Link>
-            <Link to="/shop" className="text-gray-600 hover:text-pink-500 transition-colors font-medium">Shop</Link>
-            <Link to="/about" className="text-gray-600 hover:text-pink-500 transition-colors font-medium">About</Link>
-            <Link to="/contact" className="text-gray-600 hover:text-pink-500 transition-colors font-medium">Contact</Link>
-          </div>
-
-          {/* Icons */}
-          <div className="flex items-center space-x-4">
-            <button 
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="text-gray-600 hover:text-pink-500 transition-colors"
-            >
-              <Search size={22} />
-            </button>
-            <Link to="/wishlist" className="text-gray-600 hover:text-pink-500 transition-colors relative">
-              <Heart size={22} />
-              {wishlist.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-pink-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {wishlist.length}
+    <>
+      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <div className="flex items-center">
+              <button 
+                onClick={toggleSidebar}
+                className="p-2 mr-2 text-gray-600 hover:text-emerald-600 transition-colors sm:hidden"
+              >
+                <Menu size={24} />
+              </button>
+              <Link to="/" className="flex items-center">
+                <span className="text-2xl font-bold tracking-tight text-gray-900">
+                  LUXE<span className="text-emerald-600">SHOP</span>
                 </span>
+              </Link>
+            </div>
+
+            <div className="hidden sm:flex items-center space-x-8">
+              <Link to="/" className="text-sm font-medium text-gray-600 hover:text-emerald-600 transition-colors">Home</Link>
+              <Link to="/products" className="text-sm font-medium text-gray-600 hover:text-emerald-600 transition-colors">Shop</Link>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <Link to="/cart" className="relative p-2 text-gray-600 hover:text-emerald-600 transition-colors">
+                <ShoppingCart size={22} />
+                {cart.length > 0 && (
+                  <span className="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {cart.length}
+                  </span>
+                )}
+              </Link>
+
+              {user ? (
+                <div className="flex items-center space-x-4">
+                  {isAdmin && (
+                    <Link to="/admin" className="p-2 text-gray-600 hover:text-emerald-600 transition-colors">
+                      <LayoutDashboard size={22} />
+                    </Link>
+                  )}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-700 hidden md:block">{profile?.name}</span>
+                    <button onClick={handleLogout} className="p-2 text-gray-600 hover:text-red-600 transition-colors">
+                      <LogOut size={22} />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <Link to="/login" className="flex items-center space-x-1 p-2 text-gray-600 hover:text-emerald-600 transition-colors">
+                  <User size={22} />
+                  <span className="text-sm font-medium">Login</span>
+                </Link>
               )}
-            </Link>
-            <Link to="/cart" className="text-gray-600 hover:text-pink-500 transition-colors relative">
-              <ShoppingBag size={22} />
-              {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-pink-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {totalItems}
-                </span>
-              )}
-            </Link>
-            <Link to={user ? "/profile" : "/auth"} className="text-gray-600 hover:text-pink-500 transition-colors">
-              <User size={22} />
-            </Link>
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Search Bar Overlay */}
+      {/* Mobile Sidebar */}
       <AnimatePresence>
-        {isSearchOpen && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute top-20 left-0 w-full bg-white border-b border-pink-100 p-4 shadow-lg"
-          >
-            <div className="max-w-3xl mx-auto flex items-center">
-              <input 
-                type="text" 
-                placeholder="Search for dresses, sarees, tops..." 
-                className="w-full border-none focus:ring-0 text-lg py-2"
-                autoFocus
-              />
-              <button onClick={() => setIsSearchOpen(false)} className="ml-4 text-gray-400">
-                <X size={24} />
-              </button>
-            </div>
-          </motion.div>
+        {isSidebarOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={toggleSidebar}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
+            />
+            
+            {/* Sidebar */}
+            <motion.div
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed top-0 left-0 h-full w-[280px] bg-white z-[70] shadow-2xl p-6 flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-10">
+                <span className="text-xl font-bold tracking-tight text-gray-900">
+                  LUXE<span className="text-emerald-600">SHOP</span>
+                </span>
+                <button 
+                  onClick={toggleSidebar}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-4 flex-1">
+                <Link 
+                  to="/" 
+                  onClick={toggleSidebar}
+                  className="flex items-center space-x-4 p-4 rounded-2xl text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-all font-bold"
+                >
+                  <HomeIcon size={22} />
+                  <span>Home</span>
+                </Link>
+                <Link 
+                  to="/products" 
+                  onClick={toggleSidebar}
+                  className="flex items-center space-x-4 p-4 rounded-2xl text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-all font-bold"
+                >
+                  <ShoppingBag size={22} />
+                  <span>Shop</span>
+                </Link>
+              </div>
+
+              {user && (
+                <div className="pt-6 border-t border-gray-100">
+                  <div className="flex items-center space-x-3 mb-6 px-4">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 font-bold">
+                      {profile?.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">{profile?.name}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full flex items-center space-x-4 p-4 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-bold"
+                  >
+                    <LogOut size={22} />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
-
-      {/* Mobile Navigation Menu */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0, x: -100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -100 }}
-            className="fixed inset-0 z-40 md:hidden bg-white pt-24 px-6"
-          >
-            <div className="flex flex-col space-y-6 text-xl">
-              <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-gray-800 font-medium">Home</Link>
-              <Link to="/shop" onClick={() => setIsMenuOpen(false)} className="text-gray-800 font-medium">Shop</Link>
-              <Link to="/about" onClick={() => setIsMenuOpen(false)} className="text-gray-800 font-medium">About</Link>
-              <Link to="/contact" onClick={() => setIsMenuOpen(false)} className="text-gray-800 font-medium">Contact</Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
+    </>
   );
 };
 
