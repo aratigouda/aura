@@ -10,10 +10,15 @@ export interface Product {
   id: string;
   name: string;
   price: number;
+  oldPrice: number;
   image: string;
   description: string;
   category: string;
+  inStock: boolean;
+  rating: number;
+  reviews: number;
   createdAt: string;
+  isWishlisted?: boolean;
 }
 
 export interface OrderProduct {

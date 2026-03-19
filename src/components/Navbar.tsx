@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, LayoutDashboard, Menu, X, Home as HomeIcon, ShoppingBag } from 'lucide-react';
+import { ShoppingCart, User, LogOut, LayoutDashboard, Menu, X, Home as HomeIcon, ShoppingBag, Heart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import { auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { motion, AnimatePresence } from 'motion/react';
@@ -10,6 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 const Navbar: React.FC = () => {
   const { user, profile, isAdmin } = useAuth();
   const { cart } = useCart();
+  const { wishlistCount } = useWishlist();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -46,6 +48,14 @@ const Navbar: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-4">
+              <Link to="/wishlist" className="relative p-2 text-gray-600 hover:text-emerald-600 transition-colors">
+                <Heart size={22} />
+                {wishlistCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-pink-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {wishlistCount}
+                  </span>
+                )}
+              </Link>
               <Link to="/cart" className="relative p-2 text-gray-600 hover:text-emerald-600 transition-colors">
                 <ShoppingCart size={22} />
                 {cart.length > 0 && (
@@ -129,6 +139,14 @@ const Navbar: React.FC = () => {
                 >
                   <ShoppingBag size={22} />
                   <span>Shop</span>
+                </Link>
+                <Link 
+                  to="/wishlist" 
+                  onClick={toggleSidebar}
+                  className="flex items-center space-x-4 p-4 rounded-2xl text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-all font-bold"
+                >
+                  <Heart size={22} />
+                  <span>Wishlist</span>
                 </Link>
               </div>
 

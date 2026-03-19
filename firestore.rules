@@ -15,6 +15,10 @@ service cloud.firestore {
     // Collection: order
     // Document ID: orderId
     // Fields: orderId, userId, name, email, phone, address, products, total, status, createdAt
+    //
+    // Collection: wishlist
+    // Document ID: wishlistId
+    // Fields: userId, productId, name, price, image
     // ===============================================================
 
     // Helper Functions
@@ -52,6 +56,12 @@ service cloud.firestore {
              data.status in ['pending', 'shipped', 'delivered'] && data.createdAt is string;
     }
 
+    function isValidWishlistItem(data) {
+      return data.keys().hasAll(['userId', 'productId', 'name', 'price', 'image']) &&
+             data.userId is string && data.productId is string &&
+             data.name is string && data.price is number && data.image is string;
+    }
+
     // Rules
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
@@ -72,6 +82,13 @@ service cloud.firestore {
                     (request.resource.data.userId == request.auth.uid || isAdmin());
       allow update: if isAdmin() && isValidOrder(request.resource.data);
       allow delete: if isAdmin();
+    }
+
+    match /wishlist/{wishlistId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidWishlistItem(request.resource.data) && 
+                    request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
   }
 }

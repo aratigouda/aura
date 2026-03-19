@@ -56,6 +56,19 @@
         "createdAt": { "type": "string", "format": "date-time", "description": "Order placement date" }
       },
       "required": ["orderId", "userId", "name", "email", "phone", "address", "products", "total", "status", "createdAt"]
+    },
+    "wishlist": {
+      "title": "Wishlist Item",
+      "description": "Product saved to user's wishlist",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "User UID who saved the item" },
+        "productId": { "type": "string", "description": "Product ID" },
+        "name": { "type": "string", "description": "Product name" },
+        "price": { "type": "number", "description": "Product price" },
+        "image": { "type": "string", "description": "Image URL" }
+      },
+      "required": ["userId", "productId", "name", "price", "image"]
     }
   },
   "firestore": {
@@ -70,6 +83,10 @@
     "/orders/{orderId}": {
       "schema": "orders",
       "description": "Individual order document"
+    },
+    "/wishlist/{wishlistId}": {
+      "schema": "wishlist",
+      "description": "Individual wishlist item document"
     }
   }
 }

@@ -1,18 +1,67 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { collection, query, limit, getDocs } from 'firebase/firestore';
+import { Link, useNavigate } from 'react-router-dom';
+import { collection, query, limit, getDocs, where, addDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Product } from '../types';
 import { ArrowRight, ShoppingBag, Star, ShieldCheck, Truck } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useAuth } from '../context/AuthContext';
 
 const Home: React.FC = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const categories = ["All", "Saree", "Kids", "Beauty", "Footwear"];
+
+  const toggleWishlist = async (e: React.MouseEvent, item: Product) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    if (!user) {
+      alert("Login first");
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const q = query(
+        collection(db, "wishlist"),
+        where("userId", "==", user.uid),
+        where("productId", "==", item.id)
+      );
+
+      const snap = await getDocs(q);
+
+      if (!snap.empty) {
+        // ❌ Remove
+        const deletePromises = snap.docs.map(docItem => 
+          deleteDoc(doc(db, "wishlist", docItem.id))
+        );
+        await Promise.all(deletePromises);
+        console.log("Removed from wishlist:", item.name);
+      } else {
+        // ✅ Add
+        await addDoc(collection(db, "wishlist"), {
+          userId: user.uid,
+          productId: item.id,
+          name: item.name,
+          price: Number(item.price),
+          image: item.image,
+          oldPrice: item.oldPrice || Number(item.price) * 1.2,
+          inStock: item.inStock ?? true,
+          rating: item.rating || 4.5,
+          reviews: item.reviews || 0
+        });
+        console.log("Added to wishlist:", item.name);
+      }
+    } catch (error) {
+      console.error("Error toggling wishlist:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -28,6 +77,27 @@ const Home: React.FC = () => {
 
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setFeaturedProducts(prev => prev.map(p => ({ ...p, isWishlisted: false })));
+      return;
+    }
+
+    const q = query(collection(db, 'wishlist'), where('userId', '==', user.uid));
+    const unsub = onSnapshot(q, (snap) => {
+      const wishlistIds = snap.docs.map(d => d.data().productId);
+
+      setFeaturedProducts(prev =>
+        prev.map(p => ({
+          ...p,
+          isWishlisted: wishlistIds.includes(p.id)
+        }))
+      );
+    });
+
+    return () => unsub();
+  }, [user]);
 
   const filteredProducts = featuredProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -170,24 +240,34 @@ const Home: React.FC = () => {
                 <motion.div 
                   key={product.id}
                   whileHover={{ y: -10 }}
-                  className="group relative"
+                  className="group relative cursor-pointer"
+                  onClick={() => navigate(`/products/${product.id}`)}
                 >
-                  <Link to={`/products/${product.id}`}>
-                    <div className="aspect-square overflow-hidden rounded-2xl bg-gray-100 mb-4 relative">
-                      <img 
-                        src={product.image} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
-                      <button className="absolute top-2 right-2 bg-white p-2 rounded-full shadow-sm hover:scale-110 transition-transform z-10">
-                        ❤️
-                      </button>
+                  <div className="aspect-square overflow-hidden rounded-2xl bg-gray-100 mb-4 relative">
+                    <img 
+                      src={product.image} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        toggleWishlist(e, product);
+                      }}
+                      className="absolute top-2 right-2 cursor-pointer transition-transform duration-200 active:scale-125 z-10"
+                    >
+                      {product.isWishlisted ? (
+                        <span className="text-red-500 text-xl">❤️</span>
+                      ) : (
+                        <span className="text-gray-400 text-xl">🤍</span>
+                      )}
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-1">{product.name}</h3>
-                    <p className="text-emerald-600 font-bold">${Number(product.price).toFixed(2)}</p>
-                  </Link>
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">{product.name}</h3>
+                  <p className="text-emerald-600 font-bold">${Number(product.price).toFixed(2)}</p>
                 </motion.div>
               ))}
             </div>

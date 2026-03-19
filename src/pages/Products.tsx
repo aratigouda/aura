@@ -1,18 +1,66 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { Link, useNavigate } from 'react-router-dom';
+import { collection, getDocs, query, orderBy, where, addDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Product } from '../types';
 import { Search, Filter, ShoppingCart, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { addToCart } = useCart();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const toggleWishlist = async (e: React.MouseEvent, item: Product) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    if (!user) {
+      alert("Login first");
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const q = query(
+        collection(db, "wishlist"),
+        where("userId", "==", user.uid),
+        where("productId", "==", item.id)
+      );
+
+      const snap = await getDocs(q);
+
+      if (!snap.empty) {
+        // ❌ Remove
+        const deletePromises = snap.docs.map(docItem => 
+          deleteDoc(doc(db, "wishlist", docItem.id))
+        );
+        await Promise.all(deletePromises);
+        console.log("Removed from wishlist:", item.name);
+      } else {
+        // ✅ Add
+        await addDoc(collection(db, "wishlist"), {
+          userId: user.uid,
+          productId: item.id,
+          name: item.name,
+          price: Number(item.price),
+          image: item.image,
+          oldPrice: item.oldPrice || Number(item.price) * 1.2,
+          inStock: item.inStock ?? true,
+          rating: item.rating || 4.5,
+          reviews: item.reviews || 0
+        });
+        console.log("Added to wishlist:", item.name);
+      }
+    } catch (error) {
+      console.error("Error toggling wishlist:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -23,7 +71,6 @@ const Products: React.FC = () => {
         productsData.push({ id: doc.id, ...doc.data() } as Product);
       });
       setProducts(productsData);
-      setFilteredProducts(productsData);
       setLoading(false);
     };
 
@@ -31,12 +78,30 @@ const Products: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const filtered = products.filter((product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredProducts(filtered);
-  }, [searchTerm, products]);
+    if (!user) {
+      setProducts(prev => prev.map(p => ({ ...p, isWishlisted: false })));
+      return;
+    }
+
+    const q = query(collection(db, 'wishlist'), where('userId', '==', user.uid));
+    const unsub = onSnapshot(q, (snap) => {
+      const wishlistIds = snap.docs.map(d => d.data().productId);
+
+      setProducts(prev =>
+        prev.map(p => ({
+          ...p,
+          isWishlisted: wishlistIds.includes(p.id)
+        }))
+      );
+    });
+
+    return () => unsub();
+  }, [user]);
+
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -87,22 +152,35 @@ const Products: React.FC = () => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   whileHover={{ y: -8 }}
-                  className="group"
+                  className="group cursor-pointer"
+                  onClick={() => navigate(`/products/${product.id}`)}
                 >
                   <div className="relative aspect-square overflow-hidden rounded-3xl bg-gray-100 mb-6 shadow-sm group-hover:shadow-xl group-hover:shadow-emerald-500/10 transition-all duration-500">
-                    <Link to={`/products/${product.id}`}>
-                      <img 
-                        src={product.image} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        referrerPolicy="no-referrer"
-                      />
-                    </Link>
-                    <button className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-md hover:scale-110 transition-transform z-10">
-                      ❤️
-                    </button>
+                    <img 
+                      src={product.image} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        toggleWishlist(e, product);
+                      }}
+                      className="absolute top-2 right-2 cursor-pointer transition-transform duration-200 active:scale-125 z-10"
+                    >
+                      {product.isWishlisted ? (
+                        <span className="text-red-500 text-xl">❤️</span>
+                      ) : (
+                        <span className="text-gray-400 text-xl">🤍</span>
+                      )}
+                    </div>
                     <button 
-                      onClick={() => addToCart(product)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(product);
+                      }}
                       className="absolute bottom-4 right-4 bg-white text-emerald-600 p-4 rounded-2xl shadow-lg translate-y-12 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-emerald-600 hover:text-white"
                     >
                       <ShoppingCart size={20} />
@@ -110,9 +188,7 @@ const Products: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between items-start">
-                      <Link to={`/products/${product.id}`}>
-                        <h3 className="text-lg font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">{product.name}</h3>
-                      </Link>
+                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">{product.name}</h3>
                       <div className="flex items-center text-amber-400">
                         <Star size={14} fill="currentColor" />
                         <span className="text-xs font-bold text-gray-400 ml-1">4.9</span>
