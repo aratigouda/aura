@@ -5,6 +5,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Order } from '../types';
 import { ArrowLeft, ShoppingBag, MapPin, CreditCard, Clock, CheckCircle, XCircle, HelpCircle, Star, ChevronRight, Package, Truck, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const OrderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +14,7 @@ const OrderDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [rating, setRating] = useState(0);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -47,6 +49,11 @@ const OrderDetail: React.FC = () => {
   };
 
   const cancelOrder = async () => {
+    if (!id) return;
+    setIsCancelModalOpen(true);
+  };
+
+  const confirmCancelOrder = async () => {
     if (!id) return;
     setIsCancelling(true);
     try {
@@ -136,7 +143,7 @@ const OrderDetail: React.FC = () => {
           <div className="flex-1 py-1">
             <h2 className="font-bold text-gray-900 text-base leading-tight">{product?.name}</h2>
             <p className="text-xs text-gray-500 mt-1 font-medium">Quantity: {product?.qty}</p>
-            <p className="text-emerald-600 font-extrabold mt-2 text-lg">${product?.price.toFixed(2)}</p>
+            <p className="text-emerald-600 font-extrabold mt-2 text-lg">₹{product?.price.toFixed(2)}</p>
           </div>
         </motion.div>
 
@@ -282,7 +289,7 @@ const OrderDetail: React.FC = () => {
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-500 font-medium text-sm">Total Price</span>
-            <span className="text-2xl font-black text-emerald-600">${order.total.toFixed(2)}</span>
+            <span className="text-2xl font-black text-emerald-600">₹{order.total.toFixed(2)}</span>
           </div>
         </motion.div>
 
@@ -313,6 +320,16 @@ const OrderDetail: React.FC = () => {
           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Order ID: {order.orderId}</p>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        onConfirm={confirmCancelOrder}
+        title="Cancel Order"
+        message="Are you sure you want to cancel this order? This action cannot be undone."
+        confirmText="Yes, Cancel Order"
+        type="danger"
+      />
     </div>
   );
 };

@@ -152,15 +152,20 @@ const Orders: React.FC = () => {
                     })}
                   </p>
 
-                  <div className="flex items-center gap-2 mt-2">
-                    <p className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded-md font-bold">
-                      Qty: {firstProduct?.qty || 1}
-                    </p>
-                    {otherProductsCount > 0 && (
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                        + {otherProductsCount} more item{otherProductsCount > 1 ? 's' : ''}
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded-md font-bold">
+                        Qty: {firstProduct?.qty || 1}
                       </p>
-                    )}
+                      {otherProductsCount > 0 && (
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                          + {otherProductsCount} more item{otherProductsCount > 1 ? 's' : ''}
+                        </p>
+                      )}
+                    </div>
+                    <p className="text-sm font-black text-emerald-600">
+                      ₹{order.total.toFixed(2)}
+                    </p>
                   </div>
                 </div>
 

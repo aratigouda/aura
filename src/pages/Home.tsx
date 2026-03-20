@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { collection, query, limit, getDocs, where, addDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Product } from '../types';
-import { ArrowRight, ShoppingBag, Star, ShieldCheck, Truck } from 'lucide-react';
+import { ArrowRight, ShoppingBag, Star, ShieldCheck, Truck, Heart } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
+import toast from 'react-hot-toast';
 
 const Home: React.FC = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -14,53 +16,21 @@ const Home: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addToWishlist, isInWishlist } = useWishlist();
 
   const categories = ["All", "Saree", "Kids", "Beauty", "Footwear"];
 
-  const toggleWishlist = async (e: React.MouseEvent, item: Product) => {
+  const handleWishlist = (e: React.MouseEvent, item: Product) => {
     e.stopPropagation();
     e.preventDefault();
     
     if (!user) {
-      alert("Login first");
+      toast.error("Please login to add items to your wishlist");
       navigate('/login');
       return;
     }
 
-    try {
-      const q = query(
-        collection(db, "wishlist"),
-        where("userId", "==", user.uid),
-        where("productId", "==", item.id)
-      );
-
-      const snap = await getDocs(q);
-
-      if (!snap.empty) {
-        // ❌ Remove
-        const deletePromises = snap.docs.map(docItem => 
-          deleteDoc(doc(db, "wishlist", docItem.id))
-        );
-        await Promise.all(deletePromises);
-        console.log("Removed from wishlist:", item.name);
-      } else {
-        // ✅ Add
-        await addDoc(collection(db, "wishlist"), {
-          userId: user.uid,
-          productId: item.id,
-          name: item.name,
-          price: Number(item.price),
-          image: item.image,
-          oldPrice: item.oldPrice || Number(item.price) * 1.2,
-          inStock: item.inStock ?? true,
-          rating: item.rating || 4.5,
-          reviews: item.reviews || 0
-        });
-        console.log("Added to wishlist:", item.name);
-      }
-    } catch (error) {
-      console.error("Error toggling wishlist:", error);
-    }
+    addToWishlist(item);
   };
 
   useEffect(() => {
@@ -241,7 +211,7 @@ const Home: React.FC = () => {
                   key={product.id}
                   whileHover={{ y: -10 }}
                   className="group relative cursor-pointer"
-                  onClick={() => navigate(`/products/${product.id}`)}
+                  onClick={() => navigate(`/product/${product.id}`)}
                 >
                   <div className="aspect-square overflow-hidden rounded-2xl bg-gray-100 mb-4 relative">
                     <img 
@@ -252,22 +222,17 @@ const Home: React.FC = () => {
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                     <div
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        toggleWishlist(e, product);
-                      }}
-                      className="absolute top-2 right-2 cursor-pointer transition-transform duration-200 active:scale-125 z-10"
+                      onClick={(e) => handleWishlist(e, product)}
+                      className="absolute top-4 right-4 cursor-pointer transition-transform duration-200 active:scale-125 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-white"
                     >
-                      {product.isWishlisted ? (
-                        <span className="text-red-500 text-xl">❤️</span>
-                      ) : (
-                        <span className="text-gray-400 text-xl">🤍</span>
-                      )}
+                      <Heart 
+                        size={20} 
+                        className={isInWishlist(product.id) ? "text-red-500 fill-red-500" : "text-gray-400"} 
+                      />
                     </div>
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-1">{product.name}</h3>
-                  <p className="text-emerald-600 font-bold">${Number(product.price).toFixed(2)}</p>
+                  <p className="text-emerald-600 font-bold">₹{Number(product.price).toFixed(2)}</p>
                 </motion.div>
               ))}
             </div>

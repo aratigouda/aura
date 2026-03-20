@@ -35,7 +35,7 @@ const Cart: React.FC = () => {
         <div className="lg:col-span-2 space-y-8">
           {cart.map((item) => (
             <motion.div 
-              key={item.id}
+              key={item.cartItemId}
               layout
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -52,26 +52,26 @@ const Cart: React.FC = () => {
               
               <div className="flex-1 text-center sm:text-left">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">{item.name}</h3>
-                <p className="text-emerald-600 font-bold mb-4">${Number(item.price).toFixed(2)}</p>
+                <p className="text-emerald-600 font-bold mb-4">₹{Number(item.price).toFixed(2)}</p>
                 
                 <div className="flex items-center justify-center sm:justify-start space-x-4">
                   <div className="flex items-center bg-gray-50 border border-gray-100 rounded-xl px-2 py-1">
                     <button 
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
                       className="p-1 text-gray-400 hover:text-emerald-600 transition-colors"
                     >
                       <Minus size={16} />
                     </button>
                     <span className="w-8 text-center font-bold text-gray-700">{item.quantity}</span>
                     <button 
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
                       className="p-1 text-gray-400 hover:text-emerald-600 transition-colors"
                     >
                       <Plus size={16} />
                     </button>
                   </div>
                   <button 
-                    onClick={() => removeFromCart(item.id)}
+                    onClick={() => removeFromCart(item.cartItemId)}
                     className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                   >
                     <Trash2 size={20} />
@@ -80,7 +80,7 @@ const Cart: React.FC = () => {
               </div>
 
               <div className="text-right hidden sm:block">
-                <p className="text-xl font-extrabold text-gray-900">${(Number(item.price) * item.quantity).toFixed(2)}</p>
+                <p className="text-xl font-extrabold text-gray-900">₹{(Number(item.price) * item.quantity).toFixed(2)}</p>
               </div>
             </motion.div>
           ))}
@@ -98,7 +98,7 @@ const Cart: React.FC = () => {
             <div className="space-y-4">
               <div className="flex justify-between text-gray-500 font-medium">
                 <span>Subtotal</span>
-                <span>${Number(total).toFixed(2)}</span>
+                <span>₹{Number(total).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-500 font-medium">
                 <span>Shipping</span>
@@ -106,7 +106,7 @@ const Cart: React.FC = () => {
               </div>
               <div className="pt-4 border-t border-gray-200 flex justify-between items-end">
                 <span className="text-lg font-bold text-gray-900">Total</span>
-                <span className="text-3xl font-extrabold text-emerald-600">${Number(total).toFixed(2)}</span>
+                <span className="text-3xl font-extrabold text-emerald-600">₹{Number(total).toFixed(2)}</span>
               </div>
             </div>
 

@@ -3,64 +3,20 @@ import { Link, useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, orderBy, where, addDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Product } from '../types';
-import { Search, Filter, ShoppingCart, Star } from 'lucide-react';
+import { Search, Filter, ShoppingCart, Star, Heart } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
 
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const { addToCart } = useCart();
+  const { addToWishlist, isInWishlist } = useWishlist();
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  const toggleWishlist = async (e: React.MouseEvent, item: Product) => {
-    e.stopPropagation();
-    e.preventDefault();
-    
-    if (!user) {
-      alert("Login first");
-      navigate('/login');
-      return;
-    }
-
-    try {
-      const q = query(
-        collection(db, "wishlist"),
-        where("userId", "==", user.uid),
-        where("productId", "==", item.id)
-      );
-
-      const snap = await getDocs(q);
-
-      if (!snap.empty) {
-        // ❌ Remove
-        const deletePromises = snap.docs.map(docItem => 
-          deleteDoc(doc(db, "wishlist", docItem.id))
-        );
-        await Promise.all(deletePromises);
-        console.log("Removed from wishlist:", item.name);
-      } else {
-        // ✅ Add
-        await addDoc(collection(db, "wishlist"), {
-          userId: user.uid,
-          productId: item.id,
-          name: item.name,
-          price: Number(item.price),
-          image: item.image,
-          oldPrice: item.oldPrice || Number(item.price) * 1.2,
-          inStock: item.inStock ?? true,
-          rating: item.rating || 4.5,
-          reviews: item.reviews || 0
-        });
-        console.log("Added to wishlist:", item.name);
-      }
-    } catch (error) {
-      console.error("Error toggling wishlist:", error);
-    }
-  };
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -78,25 +34,13 @@ const Products: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      setProducts(prev => prev.map(p => ({ ...p, isWishlisted: false })));
-      return;
-    }
-
-    const q = query(collection(db, 'wishlist'), where('userId', '==', user.uid));
-    const unsub = onSnapshot(q, (snap) => {
-      const wishlistIds = snap.docs.map(d => d.data().productId);
-
-      setProducts(prev =>
-        prev.map(p => ({
-          ...p,
-          isWishlisted: wishlistIds.includes(p.id)
-        }))
-      );
-    });
-
-    return () => unsub();
-  }, [user]);
+    setProducts(prev =>
+      prev.map(p => ({
+        ...p,
+        isWishlisted: isInWishlist(p.id)
+      }))
+    );
+  }, [isInWishlist]);
 
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -153,7 +97,7 @@ const Products: React.FC = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   whileHover={{ y: -8 }}
                   className="group cursor-pointer"
-                  onClick={() => navigate(`/products/${product.id}`)}
+                  onClick={() => navigate(`/product/${product.id}`)}
                 >
                   <div className="relative aspect-square overflow-hidden rounded-3xl bg-gray-100 mb-6 shadow-sm group-hover:shadow-xl group-hover:shadow-emerald-500/10 transition-all duration-500">
                     <img 
@@ -166,20 +110,20 @@ const Products: React.FC = () => {
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        toggleWishlist(e, product);
+                        addToWishlist(product);
                       }}
-                      className="absolute top-2 right-2 cursor-pointer transition-transform duration-200 active:scale-125 z-10"
+                      className="absolute top-4 right-4 cursor-pointer transition-transform duration-200 active:scale-125 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-white"
                     >
-                      {product.isWishlisted ? (
-                        <span className="text-red-500 text-xl">❤️</span>
-                      ) : (
-                        <span className="text-gray-400 text-xl">🤍</span>
-                      )}
+                      <Heart 
+                        size={20} 
+                        className={isInWishlist(product.id) ? "text-red-500 fill-red-500" : "text-gray-400"} 
+                      />
                     </div>
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
                         addToCart(product);
+                        navigate("/cart");
                       }}
                       className="absolute bottom-4 right-4 bg-white text-emerald-600 p-4 rounded-2xl shadow-lg translate-y-12 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-emerald-600 hover:text-white"
                     >
@@ -194,7 +138,7 @@ const Products: React.FC = () => {
                         <span className="text-xs font-bold text-gray-400 ml-1">4.9</span>
                       </div>
                     </div>
-                    <p className="text-emerald-600 font-extrabold text-xl">${Number(product.price).toFixed(2)}</p>
+                    <p className="text-emerald-600 font-extrabold text-xl">₹{Number(product.price).toFixed(2)}</p>
                   </div>
                 </motion.div>
               ))}

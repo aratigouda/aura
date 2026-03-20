@@ -1,16 +1,18 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Calendar, Shield, LogOut } from 'lucide-react';
+import { User, Mail, Calendar, Shield, LogOut, ShoppingBag } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 
 const Profile: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
+  const navigate = useNavigate();
 
   if (!user) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-24 text-center">
         <h1 className="text-2xl font-bold mb-4">Please login to view your profile</h1>
-        <a href="/login" className="text-emerald-600 font-bold">Login</a>
+        <button onClick={() => navigate('/login')} className="text-emerald-600 font-bold">Login</button>
       </div>
     );
   }
@@ -35,16 +37,25 @@ const Profile: React.FC = () => {
         <div className="pt-16 pb-8 px-8">
           <div className="flex justify-between items-start mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{user.name}</h1>
-              <p className="text-gray-500">{user.role.toUpperCase()}</p>
+              <h1 className="text-3xl font-bold text-gray-900">{profile?.name || 'User'}</h1>
+              <p className="text-gray-500">{profile?.role?.toUpperCase() || 'USER'}</p>
             </div>
-            <button 
-              onClick={logout}
-              className="flex items-center space-x-2 text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-xl transition-colors"
-            >
-              <LogOut size={18} />
-              <span>Logout</span>
-            </button>
+            <div className="flex space-x-2">
+              <button 
+                onClick={() => navigate('/orders')}
+                className="flex items-center space-x-2 text-emerald-600 font-bold hover:bg-emerald-50 px-4 py-2 rounded-xl transition-colors"
+              >
+                <ShoppingBag size={18} />
+                <span>Orders</span>
+              </button>
+              <button 
+                onClick={logout}
+                className="flex items-center space-x-2 text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-xl transition-colors"
+              >
+                <LogOut size={18} />
+                <span>Logout</span>
+              </button>
+            </div>
           </div>
 
           <div className="space-y-6">
@@ -64,7 +75,9 @@ const Profile: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Member Since</p>
-                <p className="text-gray-900 font-medium">{new Date(user.createdAt).toLocaleDateString()}</p>
+                <p className="text-gray-900 font-medium">
+                  {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : 'N/A'}
+                </p>
               </div>
             </div>
 

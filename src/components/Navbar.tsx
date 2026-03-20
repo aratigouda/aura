@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, LayoutDashboard, Menu, X, Home as HomeIcon, ShoppingBag, Heart } from 'lucide-react';
+import { ShoppingCart, User, LogOut, LayoutDashboard, Menu, X, Home as HomeIcon, ShoppingBag, Heart, ArrowRight, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -48,14 +48,17 @@ const Navbar: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-4">
-              <Link to="/wishlist" className="relative p-2 text-gray-600 hover:text-emerald-600 transition-colors">
+              <div 
+                onClick={() => navigate("/wishlist")} 
+                className="relative p-2 text-gray-600 hover:text-emerald-600 transition-colors cursor-pointer"
+              >
                 <Heart size={22} />
                 {wishlistCount > 0 && (
                   <span className="absolute top-0 right-0 bg-pink-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                     {wishlistCount}
                   </span>
                 )}
-              </Link>
+              </div>
               <Link to="/cart" className="relative p-2 text-gray-600 hover:text-emerald-600 transition-colors">
                 <ShoppingCart size={22} />
                 {cart.length > 0 && (
@@ -65,15 +68,34 @@ const Navbar: React.FC = () => {
                 )}
               </Link>
 
+              {cart.length > 0 && (
+                <button 
+                  onClick={() => navigate("/cart")}
+                  className="hidden md:flex items-center space-x-2 bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-black transition-all shadow-lg shadow-gray-900/10 group"
+                >
+                  <span>View Cart</span>
+                  <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              )}
+
               {user ? (
                 <div className="flex items-center space-x-4">
+                  <button 
+                    onClick={() => navigate("/orders")} 
+                    className="p-2 text-gray-600 hover:text-emerald-600 transition-colors"
+                    title="My Orders"
+                  >
+                    <ShoppingBag size={22} />
+                  </button>
                   {isAdmin && (
                     <Link to="/admin" className="p-2 text-gray-600 hover:text-emerald-600 transition-colors">
                       <LayoutDashboard size={22} />
                     </Link>
                   )}
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-gray-700 hidden md:block">{profile?.name}</span>
+                    <Link to="/profile" className="text-sm font-medium text-gray-700 hidden md:block hover:text-emerald-600 transition-colors">
+                      {profile?.name}
+                    </Link>
                     <button onClick={handleLogout} className="p-2 text-gray-600 hover:text-red-600 transition-colors">
                       <LogOut size={22} />
                     </button>
@@ -148,13 +170,45 @@ const Navbar: React.FC = () => {
                   <Heart size={22} />
                   <span>Wishlist</span>
                 </Link>
+                <Link 
+                  to="/orders" 
+                  onClick={toggleSidebar}
+                  className="flex items-center space-x-4 p-4 rounded-2xl text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-all font-bold"
+                >
+                  <ShoppingBag size={22} />
+                  <span>Orders</span>
+                </Link>
+                <Link 
+                  to="/profile" 
+                  onClick={toggleSidebar}
+                  className="flex items-center space-x-4 p-4 rounded-2xl text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-all font-bold"
+                >
+                  <User size={22} />
+                  <span>Profile</span>
+                </Link>
+
+                {cart.length > 0 && (
+                  <button 
+                    onClick={() => {
+                      navigate("/cart");
+                      toggleSidebar();
+                    }}
+                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-gray-900 text-white font-bold shadow-xl shadow-gray-900/20 group mt-4"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <ShoppingCart size={22} />
+                      <span>View Cart</span>
+                    </div>
+                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                  </button>
+                )}
               </div>
 
               {user && (
                 <div className="pt-6 border-t border-gray-100">
                   <div className="flex items-center space-x-3 mb-6 px-4">
                     <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 font-bold">
-                      {profile?.name?.charAt(0).toUpperCase()}
+                      {profile?.name?.charAt(0)?.toUpperCase() || 'U'}
                     </div>
                     <div>
                       <p className="text-sm font-bold text-gray-900">{profile?.name}</p>

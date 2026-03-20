@@ -3,64 +3,20 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs, addDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Product } from '../types';
-import { ShoppingCart, ArrowLeft, Star, ShieldCheck, Truck, RefreshCw, Heart } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Star, ShieldCheck, Truck, RefreshCw, Heart, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
 
-const ProductDetail: React.FC = () => {
+const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const { addToCart } = useCart();
+  const { addToWishlist, isInWishlist } = useWishlist();
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  const toggleWishlist = async () => {
-    if (!user) {
-      alert("Login first");
-      navigate('/login');
-      return;
-    }
-
-    if (!product) return;
-
-    try {
-      const q = query(
-        collection(db, "wishlist"),
-        where("userId", "==", user.uid),
-        where("productId", "==", product.id)
-      );
-
-      const snap = await getDocs(q);
-
-      if (!snap.empty) {
-        // ❌ Remove
-        const deletePromises = snap.docs.map(docItem => 
-          deleteDoc(doc(db, "wishlist", docItem.id))
-        );
-        await Promise.all(deletePromises);
-        console.log("Removed from wishlist:", product.name);
-      } else {
-        // ✅ Add
-        await addDoc(collection(db, "wishlist"), {
-          userId: user.uid,
-          productId: product.id,
-          name: product.name,
-          price: Number(product.price),
-          image: product.image,
-          oldPrice: product.oldPrice || Number(product.price) * 1.2,
-          inStock: product.inStock ?? true,
-          rating: product.rating || 4.5,
-          reviews: product.reviews || 0
-        });
-        console.log("Added to wishlist:", product.name);
-      }
-    } catch (error) {
-      console.error("Error toggling wishlist:", error);
-    }
-  };
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -76,24 +32,7 @@ const ProductDetail: React.FC = () => {
     fetchProduct();
   }, [id]);
 
-  useEffect(() => {
-    if (!user || !id) {
-      setIsWishlisted(false);
-      return;
-    }
-
-    const q = query(
-      collection(db, 'wishlist'), 
-      where('userId', '==', user.uid),
-      where('productId', '==', id)
-    );
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setIsWishlisted(!snapshot.empty);
-    });
-
-    return () => unsubscribe();
-  }, [user, id]);
+  const isWishlisted = product ? isInWishlist(product.id) : false;
 
   if (loading) {
     return (
@@ -163,7 +102,7 @@ const ProductDetail: React.FC = () => {
             <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight">
               {product.name}
             </h1>
-            <p className="text-3xl font-extrabold text-emerald-600">${Number(product.price).toFixed(2)}</p>
+            <p className="text-3xl font-extrabold text-emerald-600">₹{Number(product.price).toFixed(2)}</p>
           </div>
 
           <div className="space-y-4">
@@ -190,14 +129,27 @@ const ProductDetail: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row gap-4">
             <button 
-              onClick={() => addToCart(product)}
+              onClick={() => {
+                addToCart(product);
+                navigate("/cart");
+              }}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-5 rounded-2xl transition-all flex items-center justify-center space-x-3 shadow-xl shadow-emerald-600/20 group"
             >
               <ShoppingCart size={22} className="group-hover:scale-110 transition-transform" />
               <span>Add to Cart</span>
             </button>
             <button 
-              onClick={toggleWishlist}
+              onClick={() => {
+                addToCart(product);
+                navigate("/cart");
+              }}
+              className="flex-1 bg-gray-900 hover:bg-black text-white font-bold py-5 rounded-2xl transition-all flex items-center justify-center space-x-3 shadow-xl shadow-gray-900/20 group"
+            >
+              <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
+              <span>Buy Now</span>
+            </button>
+            <button 
+              onClick={() => product && addToWishlist(product)}
               className={`px-6 py-5 rounded-2xl border-2 transition-all flex items-center justify-center ${
                 isWishlisted 
                   ? 'border-red-100 bg-red-50 text-red-500' 
@@ -213,4 +165,4 @@ const ProductDetail: React.FC = () => {
   );
 };
 
-export default ProductDetail;
+export default ProductDetails;

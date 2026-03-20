@@ -4,12 +4,15 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Order, Product } from '../types';
 import { Package, ShoppingBag, Plus, Edit2, Trash2, CheckCircle, Truck, Clock, AlertCircle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const AdminDashboard: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [activeTab, setActiveTab] = useState<'orders' | 'products'>('orders');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -88,13 +91,18 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        await deleteDoc(doc(db, 'products', productId));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, `products/${productId}`);
-      }
+    setProductToDelete(productId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return;
+    try {
+      await deleteDoc(doc(db, 'products', productToDelete));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `products/${productToDelete}`);
     }
+    setProductToDelete(null);
   };
 
   const openEditModal = (product: Product) => {
@@ -168,7 +176,7 @@ const AdminDashboard: React.FC = () => {
                          <CheckCircle size={14} />}
                         <span>{order.status}</span>
                       </span>
-                      <p className="text-2xl font-extrabold text-emerald-600">${Number(order.total).toFixed(2)}</p>
+                      <p className="text-2xl font-extrabold text-emerald-600">₹{Number(order.total).toFixed(2)}</p>
                     </div>
                   </div>
 
@@ -250,7 +258,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="p-8">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">{product.name}</h3>
-                  <p className="text-emerald-600 font-extrabold text-2xl mb-4">${Number(product.price).toFixed(2)}</p>
+                  <p className="text-emerald-600 font-extrabold text-2xl mb-4">₹{Number(product.price).toFixed(2)}</p>
                   <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed">{product.description}</p>
                 </div>
               </div>
@@ -302,7 +310,7 @@ const AdminDashboard: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Price ($)</label>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Price (₹)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -365,6 +373,16 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteProduct}
+        title="Delete Product"
+        message="Are you sure you want to delete this product? This action cannot be undone."
+        confirmText="Delete"
+        type="danger"
+      />
     </div>
   );
 };

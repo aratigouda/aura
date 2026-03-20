@@ -25,7 +25,7 @@ export interface OrderProduct {
   name: string;
   price: number;
   qty: number;
-  image: string;
+  image?: string;
 }
 
 export interface Order {
@@ -44,4 +44,5 @@ export interface Order {
 
 export interface CartItem extends Product {
   quantity: number;
+  cartItemId: string;
 }

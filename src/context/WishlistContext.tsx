@@ -3,11 +3,14 @@ import { collection, query, where, onSnapshot, addDoc, deleteDoc, getDocs, doc }
 import { db } from '../firebase';
 import { useAuth } from './AuthContext';
 import { Product } from '../types';
+import toast from 'react-hot-toast';
 
 interface WishlistContextType {
   wishlistCount: number;
   wishlistIds: string[];
+  wishlistItems: Product[];
   toggleWishlist: (product: Product) => Promise<void>;
+  addToWishlist: (product: Product) => Promise<void>;
   isInWishlist: (productId: string) => boolean;
 }
 
@@ -17,11 +20,13 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const { user } = useAuth();
   const [wishlistCount, setWishlistCount] = useState(0);
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
+  const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
 
   useEffect(() => {
     if (!user) {
       setWishlistCount(0);
       setWishlistIds([]);
+      setWishlistItems([]);
       return;
     }
 
@@ -33,13 +38,57 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const unsub = onSnapshot(q, (snap) => {
       setWishlistCount(snap.size);
       setWishlistIds(snap.docs.map(d => d.data().productId));
+      setWishlistItems(snap.docs.map(d => ({
+        id: d.data().productId, // Use productId as the ID for consistency in UI
+        ...d.data()
+      } as Product)));
     });
 
     return () => unsub();
   }, [user]);
 
+  const addToWishlist = async (product: Product) => {
+    if (!user) {
+      toast.error("Please login first");
+      return;
+    }
+
+    try {
+      const q = query(
+        collection(db, "wishlist"),
+        where("userId", "==", user.uid),
+        where("productId", "==", product.id)
+      );
+
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        await addDoc(collection(db, "wishlist"), {
+          userId: user.uid,
+          productId: product.id,
+          name: product.name,
+          price: Number(product.price),
+          image: product.image,
+          oldPrice: product.oldPrice || Number(product.price) * 1.2,
+          inStock: product.inStock ?? true,
+          rating: product.rating || 4.5,
+          reviews: product.reviews || 0
+        });
+        toast.success("Added to Wishlist ❤️");
+      } else {
+        toast("Already in Wishlist", { icon: '❤️' });
+      }
+    } catch (error) {
+      console.error("Error adding to wishlist:", error);
+      toast.error("Failed to add to wishlist");
+    }
+  };
+
   const toggleWishlist = async (product: Product) => {
-    if (!user) return;
+    if (!user) {
+      toast.error("Please login first");
+      return;
+    }
 
     try {
       const q = query(
@@ -56,6 +105,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           deleteDoc(doc(db, "wishlist", docItem.id))
         );
         await Promise.all(deletePromises);
+        toast.success("Removed from Wishlist");
       } else {
         // Add
         await addDoc(collection(db, "wishlist"), {
@@ -69,9 +119,11 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           rating: product.rating || 4.5,
           reviews: product.reviews || 0
         });
+        toast.success("Added to Wishlist ❤️");
       }
     } catch (error) {
       console.error("Error toggling wishlist:", error);
+      toast.error("Failed to update wishlist");
     }
   };
 
@@ -80,7 +132,7 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   return (
-    <WishlistContext.Provider value={{ wishlistCount, wishlistIds, toggleWishlist, isInWishlist }}>
+    <WishlistContext.Provider value={{ wishlistCount, wishlistIds, wishlistItems, toggleWishlist, addToWishlist, isInWishlist }}>
       {children}
     </WishlistContext.Provider>
   );

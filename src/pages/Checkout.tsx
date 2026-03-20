@@ -44,8 +44,7 @@ const Checkout: React.FC = () => {
         products: cart.map(item => ({
           name: item.name,
           price: item.price,
-          qty: item.quantity,
-          image: item.image
+          qty: item.quantity
         })),
         total,
         status: 'pending',
@@ -77,7 +76,7 @@ const Checkout: React.FC = () => {
       }
 
       clearCart();
-      navigate('/success');
+      navigate('/success', { state: { order: orderData } });
     } catch (err: any) {
       setError(err.message || 'Failed to place order');
     } finally {
@@ -229,7 +228,7 @@ const Checkout: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">Order Summary</h2>
             <div className="space-y-6 mb-8 max-h-96 overflow-y-auto pr-2">
               {cart.map((item) => (
-                <div key={item.id} className="flex items-center space-x-4">
+                <div key={item.cartItemId} className="flex items-center space-x-4">
                   <div className="w-16 h-16 bg-white rounded-xl overflow-hidden flex-shrink-0 border border-gray-100">
                     <img src={item.image} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
@@ -237,7 +236,7 @@ const Checkout: React.FC = () => {
                     <h4 className="text-sm font-bold text-gray-900">{item.name}</h4>
                     <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                   </div>
-                  <p className="text-sm font-bold text-gray-900">${(Number(item.price) * item.quantity).toFixed(2)}</p>
+                  <p className="text-sm font-bold text-gray-900">₹{(Number(item.price) * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
             </div>
@@ -245,7 +244,7 @@ const Checkout: React.FC = () => {
             <div className="space-y-4 pt-6 border-t border-gray-200">
               <div className="flex justify-between text-gray-500 font-medium">
                 <span>Subtotal</span>
-                <span>${Number(total).toFixed(2)}</span>
+                <span>₹{Number(total).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-500 font-medium">
                 <span>Shipping</span>
@@ -253,7 +252,7 @@ const Checkout: React.FC = () => {
               </div>
               <div className="pt-4 flex justify-between items-end">
                 <span className="text-lg font-bold text-gray-900">Total</span>
-                <span className="text-3xl font-extrabold text-emerald-600">${Number(total).toFixed(2)}</span>
+                <span className="text-3xl font-extrabold text-emerald-600">₹{Number(total).toFixed(2)}</span>
               </div>
             </div>
           </div>
