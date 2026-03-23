@@ -104,80 +104,30 @@ const Orders: React.FC = () => {
         ) : (
           filteredOrders.map((order) => {
             const firstProduct = order.products?.[0];
-            const otherProductsCount = order.products.length - 1;
 
             return (
-              <motion.div 
-                key={order.orderId}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+              <div 
+                key={order.orderId} 
+                className="order-card"
                 onClick={() => navigate(`/order/${order.orderId}`)}
-                className="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-sm border border-gray-100 hover:border-emerald-100 transition-colors cursor-pointer group"
               >
-                {/* Product Image */}
-                <div className="w-20 h-20 bg-gray-50 rounded-xl overflow-hidden flex-shrink-0 border border-gray-50">
-                  {firstProduct?.image ? (
-                    <img
-                      src={firstProduct.image}
-                      alt={firstProduct.name}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                      <ShoppingBag size={24} />
-                    </div>
-                  )}
+                {/* IMAGE */}
+                <img 
+                  src={firstProduct?.image} 
+                  alt="product" 
+                  width="60"
+                  height="60"
+                  style={{ borderRadius: "10px" }}
+                  referrerPolicy="no-referrer"
+                />
+
+                <div className="flex-1">
+                  <h3>Order Placed</h3>
+                  <p>Qty: {firstProduct?.qty}</p>
                 </div>
 
-                {/* Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`w-2 h-2 rounded-full ${
-                      order.status === 'delivered' ? 'bg-emerald-500' :
-                      order.status === 'pending' ? 'bg-amber-500' : 'bg-red-500'
-                    }`}></span>
-                    <h3 className="font-bold text-gray-900 truncate">
-                      {order.status === 'delivered' ? 'Delivered' :
-                       order.status === 'shipped' ? 'On the way' :
-                       order.status === 'pending' ? 'Order Placed' : 'Cancelled'}
-                    </h3>
-                  </div>
-
-                  <p className="text-xs text-gray-500 font-medium">
-                    {(order.createdAt as any)?.toDate ? (order.createdAt as any).toDate().toLocaleDateString('en-US', { 
-                      day: 'numeric', 
-                      month: 'short', 
-                      year: 'numeric' 
-                    }) : new Date(order.createdAt).toLocaleDateString('en-US', { 
-                      day: 'numeric', 
-                      month: 'short', 
-                      year: 'numeric' 
-                    })}
-                  </p>
-
-                  <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded-md font-bold">
-                        Qty: {firstProduct?.qty || 1}
-                      </p>
-                      {otherProductsCount > 0 && (
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                          + {otherProductsCount} more item{otherProductsCount > 1 ? 's' : ''}
-                        </p>
-                      )}
-                    </div>
-                    <p className="text-sm font-black text-emerald-600">
-                      ₹{order.total.toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Arrow */}
-                <div className="text-gray-300 group-hover:text-emerald-500 transition-colors">
-                  <ChevronRight size={20} />
-                </div>
-              </motion.div>
+                <h3>₹{order.total.toFixed(2)}</h3>
+              </div>
             );
           })
         )}
