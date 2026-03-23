@@ -19,15 +19,15 @@ const Orders: React.FC = () => {
     if (!user) return;
 
     const q = query(
-      collection(db, 'orders'),
+      collection(db, 'order'),
       where('userId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const ordersData: Order[] = [];
+      const ordersData: any[] = [];
       snapshot.forEach((doc) => {
-        ordersData.push({ orderId: doc.id, ...doc.data() } as Order);
+        ordersData.push({ id: doc.id, ...doc.data() });
       });
       setOrders(ordersData);
       setFilteredOrders(ordersData);
@@ -102,14 +102,14 @@ const Orders: React.FC = () => {
             <a href="/products" className="text-emerald-600 font-bold text-sm">Browse Products</a>
           </div>
         ) : (
-          filteredOrders.map((order) => {
+          filteredOrders.map((order: any) => {
             const firstProduct = order.products?.[0];
 
             return (
               <div 
-                key={order.orderId} 
+                key={order.id} 
                 className="order-card"
-                onClick={() => navigate(`/order/${order.orderId}`)}
+                onClick={() => navigate(`/order/${order.id}`)}
               >
                 {/* IMAGE */}
                 <img 

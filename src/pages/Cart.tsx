@@ -111,7 +111,7 @@ const Cart: React.FC = () => {
             </div>
 
             <button 
-              onClick={() => navigate('/checkout')}
+              onClick={() => navigate('/payment')}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-5 rounded-2xl transition-all flex items-center justify-center space-x-3 shadow-xl shadow-emerald-600/20 group"
             >
               <span>Checkout</span>

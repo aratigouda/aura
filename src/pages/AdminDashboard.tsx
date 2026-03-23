@@ -23,7 +23,7 @@ const AdminDashboard: React.FC = () => {
   });
 
   useEffect(() => {
-    const ordersQuery = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    const ordersQuery = query(collection(db, 'order'), orderBy('createdAt', 'desc'));
     const unsubscribeOrders = onSnapshot(ordersQuery, (snapshot) => {
       const ordersData: Order[] = [];
       snapshot.forEach((doc) => {
@@ -31,7 +31,7 @@ const AdminDashboard: React.FC = () => {
       });
       setOrders(ordersData);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'orders');
+      handleFirestoreError(error, OperationType.GET, 'order');
     });
 
     const productsQuery = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
@@ -53,10 +53,10 @@ const AdminDashboard: React.FC = () => {
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     try {
-      const orderRef = doc(db, 'orders', orderId);
+      const orderRef = doc(db, 'order', orderId);
       await updateDoc(orderRef, { status: newStatus });
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `orders/${orderId}`);
+      handleFirestoreError(error, OperationType.UPDATE, `order/${orderId}`);
     }
   };
 

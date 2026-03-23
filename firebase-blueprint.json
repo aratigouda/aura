@@ -47,7 +47,9 @@
               "name": { "type": "string" },
               "price": { "type": "number" },
               "qty": { "type": "number" },
-              "image": { "type": "string" }
+              "image": { "type": "string" },
+              "selectedSize": { "type": "string" },
+              "easyReturn": { "type": "boolean" }
             }
           },
           "description": "List of ordered products"
@@ -81,7 +83,7 @@
       "schema": "products",
       "description": "Individual product document"
     },
-    "/orders/{orderId}": {
+    "/order/{orderId}": {
       "schema": "orders",
       "description": "Individual order document"
     },

@@ -4,10 +4,11 @@ import { doc, getDoc, collection, query, where, getDocs, addDoc, deleteDoc, onSn
 import { db } from '../firebase';
 import { Product } from '../types';
 import { ShoppingCart, ArrowLeft, Star, ShieldCheck, Truck, RefreshCw, Heart, ArrowRight } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
+import toast from 'react-hot-toast';
 
 const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +18,9 @@ const ProductDetails: React.FC = () => {
   const { addToWishlist, isInWishlist } = useWishlist();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [showPopup, setShowPopup] = useState(false);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [easyReturn, setEasyReturn] = useState<boolean | null>(null);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -33,6 +37,27 @@ const ProductDetails: React.FC = () => {
   }, [id]);
 
   const isWishlisted = product ? isInWishlist(product.id) : false;
+
+  const goToReview = () => {
+    if (!product) return;
+    if (!selectedSize) {
+      toast.error("Please select a size");
+      return;
+    }
+    if (easyReturn === null) {
+      toast.error("Please select return option");
+      return;
+    }
+    
+    navigate("/review", { state: { 
+      product: {
+        ...product,
+        selectedSize,
+        easyReturn,
+        price: product.easyReturn ? product.price + 20 : product.price
+      }
+    } });
+  };
 
   if (loading) {
     return (
@@ -139,10 +164,7 @@ const ProductDetails: React.FC = () => {
               <span>Add to Cart</span>
             </button>
             <button 
-              onClick={() => {
-                addToCart(product);
-                navigate("/cart");
-              }}
+              onClick={() => setShowPopup(true)}
               className="flex-1 bg-gray-900 hover:bg-black text-white font-bold py-5 rounded-2xl transition-all flex items-center justify-center space-x-3 shadow-xl shadow-gray-900/20 group"
             >
               <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
@@ -161,6 +183,91 @@ const ProductDetails: React.FC = () => {
           </div>
         </motion.div>
       </div>
+
+      {/* Buy Now Popup */}
+      <AnimatePresence>
+        {showPopup && (
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPopup(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            ></motion.div>
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="relative bg-white w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl p-8 sm:p-10 overflow-hidden"
+            >
+              <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-8 sm:hidden"></div>
+              
+              <div className="space-y-8">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Select Size</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <button 
+                      onClick={() => setSelectedSize("Free Size")}
+                      className={`px-8 py-3 rounded-xl font-bold text-sm transition-all border-2 ${
+                        selectedSize === "Free Size" 
+                          ? "border-emerald-600 bg-emerald-50 text-emerald-600" 
+                          : "border-gray-100 text-gray-500 hover:border-gray-200"
+                      }`}
+                    >
+                      Free Size
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">Easy Returns</h3>
+                  <p className="text-xs text-gray-400 mb-4 font-medium uppercase tracking-wider">Choose your preference</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button 
+                      onClick={() => setEasyReturn(true)}
+                      className={`p-4 rounded-2xl border-2 transition-all text-left ${
+                        easyReturn === true 
+                          ? "border-emerald-600 bg-emerald-50" 
+                          : "border-gray-100 hover:border-gray-200"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className={`text-sm font-bold ${easyReturn === true ? "text-emerald-600" : "text-gray-900"}`}>YES</span>
+                        <span className="text-emerald-600 font-black text-sm">₹{(Number(product.price) + 20).toFixed(0)}</span>
+                      </div>
+                      <p className="text-[10px] text-gray-400 font-medium">Full protection & easy returns</p>
+                    </button>
+                    <button 
+                      onClick={() => setEasyReturn(false)}
+                      className={`p-4 rounded-2xl border-2 transition-all text-left ${
+                        easyReturn === false 
+                          ? "border-emerald-600 bg-emerald-50" 
+                          : "border-gray-100 hover:border-gray-200"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className={`text-sm font-bold ${easyReturn === false ? "text-emerald-600" : "text-gray-900"}`}>NO</span>
+                        <span className="text-gray-900 font-black text-sm">₹{Number(product.price).toFixed(0)}</span>
+                      </div>
+                      <p className="text-[10px] text-gray-400 font-medium">Standard policy applies</p>
+                    </button>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={goToReview}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-5 rounded-2xl transition-all shadow-xl shadow-emerald-600/20 flex items-center justify-center space-x-3"
+                >
+                  <span>Buy Now</span>
+                  <ArrowRight size={20} />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

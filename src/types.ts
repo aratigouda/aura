@@ -19,6 +19,8 @@ export interface Product {
   reviews: number;
   createdAt: string;
   isWishlisted?: boolean;
+  selectedSize?: string;
+  easyReturn?: boolean;
 }
 
 export interface OrderProduct {
@@ -26,6 +28,8 @@ export interface OrderProduct {
   price: number;
   qty: number;
   image?: string;
+  selectedSize?: string;
+  easyReturn?: boolean;
 }
 
 export interface Order {

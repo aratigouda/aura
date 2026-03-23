@@ -31,17 +31,28 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [cart]);
 
   const addToCart = (product: Product) => {
-    const existingItem = cart.find((item) => item.id === product.id);
+    const existingItem = cart.find((item) => 
+      item.id === product.id && 
+      item.selectedSize === product.selectedSize && 
+      item.easyReturn === product.easyReturn
+    );
+    
     if (existingItem) {
       setCart((prev) =>
         prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          (item.id === product.id && 
+           item.selectedSize === product.selectedSize && 
+           item.easyReturn === product.easyReturn) 
+            ? { ...item, quantity: item.quantity + 1 } 
+            : item
         )
       );
       toast.success(`Increased ${product.name} quantity`);
     } else {
       const cartItemId = Math.random().toString(36).substring(7);
-      setCart((prev) => [...prev, { ...product, quantity: 1, cartItemId }]);
+      // If easyReturn is true, we add 20 to the price (as per the snippet 248 vs 228)
+      const adjustedPrice = product.easyReturn ? product.price + 20 : product.price;
+      setCart((prev) => [...prev, { ...product, price: adjustedPrice, quantity: 1, cartItemId }]);
       toast.success(`Added ${product.name} to cart`);
     }
   };

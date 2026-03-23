@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { ShoppingBag, ArrowRight, ArrowLeft, CreditCard, ShieldCheck, Truck, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
+import toast from 'react-hot-toast';
 
 const Checkout: React.FC = () => {
-  const { cart, total, clearCart } = useCart();
+  const { cart, total: cartTotal, clearCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { product: directProduct } = location.state || {};
   
   const [formData, setFormData] = useState({
     name: '',
@@ -20,6 +23,7 @@ const Checkout: React.FC = () => {
     city: '',
     zip: '',
   });
+  const [paymentMethod, setPaymentMethod] = useState('online');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -38,25 +42,41 @@ const Checkout: React.FC = () => {
 
     try {
       const orderData = {
-        orderId: `ORD-${Date.now()}`,
+        orderId: "ORD-" + Date.now(),
         userId: user.uid,
-        ...formData,
-        products: cart.map(item => ({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+
+        products: directProduct ? [{
+          name: directProduct.name,
+          price: Number(directProduct.price),
+          image: directProduct.image,
+          qty: 1,
+          selectedSize: directProduct.selectedSize,
+          easyReturn: directProduct.easyReturn
+        }] : cart.map(item => ({
           name: item.name,
-          price: item.price,
+          price: Number(item.price),
+          image: item.image,
           qty: item.quantity,
-          image: item.image
+          selectedSize: item.selectedSize,
+          easyReturn: item.easyReturn
         })),
-        total,
-        status: 'pending',
-        createdAt: new Date(),
+
+        total: directProduct ? Number(directProduct.price) : cart.reduce((a, b) => a + Number(b.price), 0),
+        paymentMethod,
+        status: "pending",
+
+        createdAt: new Date().toISOString()
       };
 
       // 1. Save to Firestore
       try {
-        await addDoc(collection(db, 'orders'), orderData);
+        await addDoc(collection(db, 'order'), orderData);
       } catch (err) {
-        handleFirestoreError(err, OperationType.CREATE, 'orders');
+        handleFirestoreError(err, OperationType.CREATE, 'order');
       }
 
       // 2. Optional: Save to Google Sheets (Mocked URL as per instructions)
@@ -77,7 +97,8 @@ const Checkout: React.FC = () => {
       }
 
       clearCart();
-      navigate('/success', { state: { order: orderData } });
+      toast.success("Order Placed Successfully ✅");
+      navigate('/orders');
     } catch (err: any) {
       setError(err.message || 'Failed to place order');
     } finally {
@@ -85,17 +106,20 @@ const Checkout: React.FC = () => {
     }
   };
 
-  if (cart.length === 0) {
+  if (!directProduct && cart.length === 0) {
     return <Navigate to="/cart" replace />;
   }
+
+  const displayProducts = directProduct ? [directProduct] : cart;
+  const displayTotal = directProduct ? Number(directProduct.price) : Number(cartTotal);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
       <div className="flex items-center justify-between mb-12">
         <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Checkout</h1>
-        <button onClick={() => navigate('/cart')} className="text-gray-500 hover:text-emerald-600 font-bold flex items-center space-x-2 transition-colors">
+        <button onClick={() => navigate(-1)} className="text-gray-500 hover:text-emerald-600 font-bold flex items-center space-x-2 transition-colors">
           <ArrowLeft size={20} />
-          <span>Back to Cart</span>
+          <span>Back</span>
         </button>
       </div>
 
@@ -199,6 +223,44 @@ const Checkout: React.FC = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Payment Method</label>
+                <div className="space-y-3">
+                  <label className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-emerald-500 bg-emerald-50/50' : 'border-gray-100 hover:border-gray-200'}`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      className="w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                      checked={paymentMethod === 'cod'}
+                      onChange={() => setPaymentMethod('cod')}
+                    />
+                    <span className="ml-3 text-sm font-bold text-gray-900">Cash on Delivery</span>
+                  </label>
+
+                  <label className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'upi' ? 'border-emerald-500 bg-emerald-50/50' : 'border-gray-100 hover:border-gray-200'}`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      className="w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                      checked={paymentMethod === 'upi'}
+                      onChange={() => setPaymentMethod('upi')}
+                    />
+                    <span className="ml-3 text-sm font-bold text-gray-900">UPI Payment</span>
+                  </label>
+
+                  <label className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'online' ? 'border-emerald-500 bg-emerald-50/50' : 'border-gray-100 hover:border-gray-200'}`}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      className="w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                      checked={paymentMethod === 'online'}
+                      onChange={() => setPaymentMethod('online')}
+                    />
+                    <span className="ml-3 text-sm font-bold text-gray-900">Pay Online</span>
+                  </label>
+                </div>
+              </div>
+
               <div className="pt-8">
                 <button
                   type="submit"
@@ -206,7 +268,7 @@ const Checkout: React.FC = () => {
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-5 rounded-2xl transition-all flex items-center justify-center space-x-3 shadow-xl shadow-emerald-600/20 group disabled:opacity-50"
                 >
                   <CreditCard size={22} className="group-hover:scale-110 transition-transform" />
-                  <span>{loading ? 'Processing...' : 'Complete Purchase'}</span>
+                  <span>{loading ? 'Processing...' : 'Place Order'}</span>
                 </button>
               </div>
             </form>
@@ -228,16 +290,17 @@ const Checkout: React.FC = () => {
           <div className="bg-gray-50 rounded-[2.5rem] p-10 border border-gray-100">
             <h2 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">Order Summary</h2>
             <div className="space-y-6 mb-8 max-h-96 overflow-y-auto pr-2">
-              {cart.map((item) => (
-                <div key={item.cartItemId} className="flex items-center space-x-4">
+              {displayProducts.map((item, idx) => (
+                <div key={directProduct ? idx : (item as any).cartItemId} className="flex items-center space-x-4">
                   <div className="w-16 h-16 bg-white rounded-xl overflow-hidden flex-shrink-0 border border-gray-100">
                     <img src={item.image} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
                   <div className="flex-1">
                     <h4 className="text-sm font-bold text-gray-900">{item.name}</h4>
-                    <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                    <p className="text-xs text-gray-500">Qty: {directProduct ? 1 : (item as any).quantity}</p>
+                    {item.selectedSize && <p className="text-[10px] text-gray-400">Size: {item.selectedSize}</p>}
                   </div>
-                  <p className="text-sm font-bold text-gray-900">₹{(Number(item.price) * item.quantity).toFixed(2)}</p>
+                  <p className="text-sm font-bold text-gray-900">₹{(Number(item.price) * (directProduct ? 1 : (item as any).quantity)).toFixed(2)}</p>
                 </div>
               ))}
             </div>
@@ -245,7 +308,7 @@ const Checkout: React.FC = () => {
             <div className="space-y-4 pt-6 border-t border-gray-200">
               <div className="flex justify-between text-gray-500 font-medium">
                 <span>Subtotal</span>
-                <span>₹{Number(total).toFixed(2)}</span>
+                <span>₹{displayTotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-500 font-medium">
                 <span>Shipping</span>
@@ -253,7 +316,7 @@ const Checkout: React.FC = () => {
               </div>
               <div className="pt-4 flex justify-between items-end">
                 <span className="text-lg font-bold text-gray-900">Total</span>
-                <span className="text-3xl font-extrabold text-emerald-600">₹{Number(total).toFixed(2)}</span>
+                <span className="text-3xl font-extrabold text-emerald-600">₹{displayTotal.toFixed(2)}</span>
               </div>
             </div>
           </div>

@@ -16,7 +16,8 @@ import Profile from "./pages/Profile";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
+import Review from "./pages/Review";
+import Payment from "./pages/Payment";
 import Success from "./pages/Success";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -39,7 +40,8 @@ function App() {
                   <Route path="/products" element={<Products />} />
                   <Route path="/product/:id" element={<ProductDetails />} />
                   <Route path="/cart" element={<Cart />} />
-                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/review" element={<Review />} />
+                  <Route path="/payment" element={<Payment />} />
                   <Route path="/success" element={<Success />} />
                   <Route path="/orders" element={<Orders />} />
                   <Route path="/order/:id" element={<OrderDetail />} />

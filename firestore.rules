@@ -12,7 +12,7 @@ service cloud.firestore {
     // Document ID: productId
     // Fields: id, name, price, image, description, createdAt
     //
-    // Collection: orders
+    // Collection: order
     // Document ID: orderId
     // Fields: orderId, userId, name, email, phone, address, products, total, status, createdAt
     //
@@ -53,7 +53,8 @@ service cloud.firestore {
              data.orderId is string && data.userId is string && data.name is string &&
              data.email is string && data.phone is string && data.address is string &&
              data.products is list && data.total is number &&
-             data.status in ['pending', 'shipped', 'delivered'] && data.createdAt is timestamp;
+             data.status in ['pending', 'shipped', 'delivered', 'cancelled'] && data.createdAt is string &&
+             (!('rating' in data) || (data.rating is number && data.rating >= 1 && data.rating <= 5));
     }
 
     function isValidWishlistItem(data) {
@@ -76,11 +77,15 @@ service cloud.firestore {
       allow write: if isAdmin() && isValidProduct(request.resource.data);
     }
 
-    match /orders/{orderId} {
+    match /order/{orderId} {
       allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated() && isValidOrder(request.resource.data) && 
                     (request.resource.data.userId == request.auth.uid || isAdmin());
-      allow update: if isAdmin() && isValidOrder(request.resource.data);
+      allow update: if (isAdmin() && isValidOrder(request.resource.data)) || 
+                    (isAuthenticated() && resource.data.userId == request.auth.uid && 
+                     isValidOrder(request.resource.data) &&
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'rating']) &&
+                     (request.resource.data.status == resource.data.status || (resource.data.status == 'pending' && request.resource.data.status == 'cancelled')));
       allow delete: if isAdmin();
     }
 

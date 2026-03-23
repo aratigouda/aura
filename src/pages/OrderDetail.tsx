@@ -20,16 +20,16 @@ const OrderDetail: React.FC = () => {
   useEffect(() => {
     if (!id) return;
 
-    const docRef = doc(db, 'orders', id);
+    const docRef = doc(db, 'order', id);
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        const data = { orderId: docSnap.id, ...docSnap.data() } as Order;
+        const data = { id: docSnap.id, ...docSnap.data() } as any;
         setOrder(data);
         if (data.rating) setRating(data.rating);
       }
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `orders/${id}`);
+      handleFirestoreError(error, OperationType.GET, `order/${id}`);
       setLoading(false);
     });
 
@@ -40,10 +40,10 @@ const OrderDetail: React.FC = () => {
     if (!id) return;
     setRating(value);
     try {
-      await updateDoc(doc(db, 'orders', id), { rating: value });
+      await updateDoc(doc(db, 'order', id), { rating: value });
       showToast('Rating updated successfully!', 'success');
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `orders/${id}`);
+      handleFirestoreError(error, OperationType.UPDATE, `order/${id}`);
       showToast('Failed to update rating', 'error');
     }
   };
@@ -57,10 +57,10 @@ const OrderDetail: React.FC = () => {
     if (!id) return;
     setIsCancelling(true);
     try {
-      await updateDoc(doc(db, 'orders', id), { status: 'cancelled' });
+      await updateDoc(doc(db, 'order', id), { status: 'cancelled' });
       showToast('Order cancelled successfully', 'success');
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `orders/${id}`);
+      handleFirestoreError(error, OperationType.UPDATE, `order/${id}`);
       showToast('Failed to cancel order', 'error');
     } finally {
       setIsCancelling(false);
