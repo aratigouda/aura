@@ -19,7 +19,7 @@ const Orders: React.FC = () => {
     if (!user) return;
 
     const q = query(
-      collection(db, 'order'),
+      collection(db, 'orders'),
       where('userId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
@@ -145,7 +145,11 @@ const Orders: React.FC = () => {
                   </div>
 
                   <p className="text-xs text-gray-500 font-medium">
-                    {new Date(order.createdAt).toLocaleDateString('en-US', { 
+                    {(order.createdAt as any)?.toDate ? (order.createdAt as any).toDate().toLocaleDateString('en-US', { 
+                      day: 'numeric', 
+                      month: 'short', 
+                      year: 'numeric' 
+                    }) : new Date(order.createdAt).toLocaleDateString('en-US', { 
                       day: 'numeric', 
                       month: 'short', 
                       year: 'numeric' 

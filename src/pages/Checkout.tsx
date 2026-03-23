@@ -44,18 +44,19 @@ const Checkout: React.FC = () => {
         products: cart.map(item => ({
           name: item.name,
           price: item.price,
-          qty: item.quantity
+          qty: item.quantity,
+          image: item.image
         })),
         total,
         status: 'pending',
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
       };
 
       // 1. Save to Firestore
       try {
-        await addDoc(collection(db, 'order'), orderData);
+        await addDoc(collection(db, 'orders'), orderData);
       } catch (err) {
-        handleFirestoreError(err, OperationType.CREATE, 'order');
+        handleFirestoreError(err, OperationType.CREATE, 'orders');
       }
 
       // 2. Optional: Save to Google Sheets (Mocked URL as per instructions)

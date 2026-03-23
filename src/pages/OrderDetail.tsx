@@ -20,7 +20,7 @@ const OrderDetail: React.FC = () => {
   useEffect(() => {
     if (!id) return;
 
-    const docRef = doc(db, 'order', id);
+    const docRef = doc(db, 'orders', id);
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = { orderId: docSnap.id, ...docSnap.data() } as Order;
@@ -29,7 +29,7 @@ const OrderDetail: React.FC = () => {
       }
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `order/${id}`);
+      handleFirestoreError(error, OperationType.GET, `orders/${id}`);
       setLoading(false);
     });
 
@@ -40,10 +40,10 @@ const OrderDetail: React.FC = () => {
     if (!id) return;
     setRating(value);
     try {
-      await updateDoc(doc(db, 'order', id), { rating: value });
+      await updateDoc(doc(db, 'orders', id), { rating: value });
       showToast('Rating updated successfully!', 'success');
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `order/${id}`);
+      handleFirestoreError(error, OperationType.UPDATE, `orders/${id}`);
       showToast('Failed to update rating', 'error');
     }
   };
@@ -57,10 +57,10 @@ const OrderDetail: React.FC = () => {
     if (!id) return;
     setIsCancelling(true);
     try {
-      await updateDoc(doc(db, 'order', id), { status: 'cancelled' });
+      await updateDoc(doc(db, 'orders', id), { status: 'cancelled' });
       showToast('Order cancelled successfully', 'success');
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `order/${id}`);
+      handleFirestoreError(error, OperationType.UPDATE, `orders/${id}`);
       showToast('Failed to cancel order', 'error');
     } finally {
       setIsCancelling(false);
@@ -202,7 +202,12 @@ const OrderDetail: React.FC = () => {
             </h3>
           </div>
           <p className="text-xs text-gray-500 font-medium mb-6">
-            {new Date(order.createdAt).toLocaleDateString('en-US', {
+            {(order.createdAt as any)?.toDate ? (order.createdAt as any).toDate().toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }) : new Date(order.createdAt).toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
