@@ -143,7 +143,7 @@ const OrderDetail: React.FC = () => {
           <div className="flex-1 py-1">
             <h2 className="font-bold text-gray-900 text-base leading-tight">{product?.name}</h2>
             <p className="text-xs text-gray-500 mt-1 font-medium">Quantity: {product?.qty}</p>
-            <p className="text-emerald-600 font-extrabold mt-2 text-lg">₹{product?.price.toFixed(2)}</p>
+            <p className="text-emerald-600 font-extrabold mt-2 text-lg">₹{Number(product?.price || 0).toFixed(2)}</p>
           </div>
         </motion.div>
 
@@ -294,7 +294,7 @@ const OrderDetail: React.FC = () => {
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-500 font-medium text-sm">Total Price</span>
-            <span className="text-2xl font-black text-emerald-600">₹{order.total.toFixed(2)}</span>
+            <span className="text-2xl font-black text-emerald-600">₹{Number(order.total || 0).toFixed(2)}</span>
           </div>
         </motion.div>
 

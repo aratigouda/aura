@@ -126,7 +126,7 @@ const Orders: React.FC = () => {
                   <p>Qty: {firstProduct?.qty}</p>
                 </div>
 
-                <h3>₹{order.total.toFixed(2)}</h3>
+                <h3>₹{Number(order.total || 0).toFixed(2)}</h3>
               </div>
             );
           })

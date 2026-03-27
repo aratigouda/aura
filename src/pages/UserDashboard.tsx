@@ -79,7 +79,7 @@ const UserDashboard: React.FC = () => {
             <CreditCard size={24} />
           </div>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Spent</p>
-          <h3 className="text-3xl font-black text-gray-900">₹{totalSpent.toFixed(2)}</h3>
+          <h3 className="text-3xl font-black text-gray-900">₹{Number(totalSpent || 0).toFixed(2)}</h3>
         </div>
         <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-md transition-all group">
           <div className="w-12 h-12 bg-pink-50 rounded-2xl flex items-center justify-center text-pink-600 mb-6 group-hover:scale-110 transition-transform">
