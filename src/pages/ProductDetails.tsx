@@ -59,6 +59,21 @@ const ProductDetails: React.FC = () => {
     } });
   };
 
+  const addToCartHandler = () => {
+    if (!product) return;
+    if (!selectedSize || easyReturn === null) {
+      setShowPopup(true);
+      return;
+    }
+
+    addToCart({
+      ...product,
+      selectedSize,
+      easyReturn
+    });
+    navigate("/cart");
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 animate-pulse">
@@ -154,10 +169,7 @@ const ProductDetails: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row gap-4">
             <button 
-              onClick={() => {
-                addToCart(product);
-                navigate("/cart");
-              }}
+              onClick={addToCartHandler}
               className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-5 rounded-2xl transition-all flex items-center justify-center space-x-3 shadow-xl shadow-emerald-600/20 group"
             >
               <ShoppingCart size={22} className="group-hover:scale-110 transition-transform" />
@@ -256,13 +268,22 @@ const ProductDetails: React.FC = () => {
                   </div>
                 </div>
 
-                <button 
-                  onClick={goToReview}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-5 rounded-2xl transition-all shadow-xl shadow-emerald-600/20 flex items-center justify-center space-x-3"
-                >
-                  <span>Buy Now</span>
-                  <ArrowRight size={20} />
-                </button>
+                <div className="flex flex-col gap-3">
+                  <button 
+                    onClick={goToReview}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-5 rounded-2xl transition-all shadow-xl shadow-emerald-600/20 flex items-center justify-center space-x-3"
+                  >
+                    <span>Buy Now</span>
+                    <ArrowRight size={20} />
+                  </button>
+                  <button 
+                    onClick={addToCartHandler}
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-4 rounded-2xl transition-all flex items-center justify-center space-x-3"
+                  >
+                    <ShoppingCart size={20} />
+                    <span>Add to Cart</span>
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

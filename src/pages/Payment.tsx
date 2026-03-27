@@ -44,29 +44,29 @@ const Checkout: React.FC = () => {
       const orderData = {
         orderId: "ORD-" + Date.now(),
         userId: user.uid,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
+        name: formData.name || "",
+        email: formData.email || "",
+        phone: formData.phone || "",
+        address: formData.address || "",
 
         products: directProduct ? [{
-          name: directProduct.name,
-          price: Number(directProduct.price),
-          image: directProduct.image,
+          name: directProduct.name || "Unknown Product",
+          price: Number(directProduct.price) || 0,
+          image: directProduct.image || "",
           qty: 1,
-          selectedSize: directProduct.selectedSize,
-          easyReturn: directProduct.easyReturn
+          selectedSize: directProduct.selectedSize || "Free Size",
+          easyReturn: !!directProduct.easyReturn
         }] : cart.map(item => ({
-          name: item.name,
-          price: Number(item.price),
-          image: item.image,
-          qty: item.quantity,
-          selectedSize: item.selectedSize,
-          easyReturn: item.easyReturn
+          name: item.name || "Unknown Product",
+          price: Number(item.price) || 0,
+          image: item.image || "",
+          qty: item.quantity || 1,
+          selectedSize: item.selectedSize || "Free Size",
+          easyReturn: !!item.easyReturn
         })),
 
-        total: directProduct ? Number(directProduct.price) : cart.reduce((a, b) => a + Number(b.price), 0),
-        paymentMethod,
+        total: (directProduct ? Number(directProduct.price) : cart.reduce((a, b) => a + Number(b.price), 0)) || 0,
+        paymentMethod: paymentMethod || "online",
         status: "pending",
 
         createdAt: new Date().toISOString()
