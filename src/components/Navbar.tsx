@@ -184,7 +184,7 @@ const Navbar: React.FC = () => {
                   className="flex items-center space-x-4 p-4 rounded-2xl text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 transition-all font-bold"
                 >
                   <User size={22} />
-                  <span>Profile</span>
+                  <span>Dashboard</span>
                 </Link>
 
                 {cart.length > 0 && (

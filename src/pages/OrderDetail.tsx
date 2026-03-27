@@ -113,7 +113,7 @@ const OrderDetail: React.FC = () => {
       {/* Header */}
       <div className="bg-white p-4 font-bold shadow-sm sticky top-0 z-10 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/orders')} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
+          <button onClick={() => navigate(-1)} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
             <ArrowLeft size={20} />
           </button>
           <span className="text-gray-900 uppercase tracking-wider text-sm">Order Details</span>

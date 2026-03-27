@@ -13,6 +13,7 @@ import Wishlist from "./pages/Wishlist";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
 import Profile from "./pages/Profile";
+import UserDashboard from "./pages/UserDashboard";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
@@ -45,7 +46,7 @@ function App() {
                   <Route path="/success" element={<Success />} />
                   <Route path="/orders" element={<Orders />} />
                   <Route path="/order/:id" element={<OrderDetail />} />
-                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/profile" element={<UserDashboard />} />
                   <Route path="/admin" element={
                     <ProtectedRoute adminOnly>
                       <AdminDashboard />

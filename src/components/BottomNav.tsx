@@ -67,7 +67,7 @@ const BottomNav: React.FC = () => {
           }
         >
           <User size={20} />
-          <span className="text-[10px] font-bold uppercase tracking-wider">Profile</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider">Dashboard</span>
         </NavLink>
       </div>
     </nav>
